@@ -11,7 +11,14 @@ from torch_geometric.loader import LinkNeighborLoader
 from src.data import EdgeSplit, MAGData
 from src.data.graph_utils import edge_dict_to_index
 from src.models import LinkPredictor, build_model
-from src.tasks.common import clone_state_dict, load_state_dict_cpu, resolve_num_neighbors
+from src.tasks.common import (
+    clone_state_dict,
+    format_aux_info_stats,
+    load_state_dict_cpu,
+    resolve_num_neighbors,
+    summarize_aux_info_stats,
+    update_aux_info_stats,
+)
 from src.tasks.inference import infer_all_embeddings, resolve_inference_mode
 from src.utils.metrics import format_pct
 from src.utils.seeds import set_seed
@@ -324,6 +331,8 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
         predictor.train()
         total_loss = 0.0
         total_examples = 0
+        aux_sums: dict[str, float] = {}
+        aux_counts: dict[str, float] = {}
         edge_label_index, edge_label = _build_epoch_train_labels(
             train_pos_edge_index_all,
             data.num_nodes,
@@ -353,7 +362,7 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
                     labels,
                     num_nodes=int(data.num_nodes),
                 )
-                z, _, _, aux_loss, _ = model(x_all, message_edge_index)
+                z, _, _, aux_loss, aux_info = model(x_all, message_edge_index)
                 src, dst = edge_label_index_batch
                 logits = predictor.score_pairs(z[src], z[dst])
             elif uses_graph:
@@ -366,7 +375,7 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
                     batch.edge_label,
                     num_nodes=int(batch.x.size(0)),
                 )
-                z, _, _, aux_loss, _ = model(batch.x, message_edge_index)
+                z, _, _, aux_loss, aux_info = model(batch.x, message_edge_index)
                 src, dst = batch.edge_label_index
                 logits = predictor.score_pairs(z[src], z[dst])
                 labels = batch.edge_label.float()
@@ -374,7 +383,7 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
                 edges, labels = batch
                 edges = edges.to(device)
                 labels = labels.to(device)
-                z_all, _, _, aux_loss, _ = model(x_all[edges.reshape(-1)], None)
+                z_all, _, _, aux_loss, aux_info = model(x_all[edges.reshape(-1)], None)
                 z_pairs = z_all.view(edges.size(0), 2, -1)
                 logits = predictor.score_pairs(z_pairs[:, 0], z_pairs[:, 1])
             loss = criterion(logits, labels) + float(cfg.task.loss.aux_weight) * aux_loss
@@ -385,18 +394,24 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
             optimizer.step()
             total_loss += float(loss.item()) * int(labels.numel())
             total_examples += int(labels.numel())
+            update_aux_info_stats(aux_sums, aux_counts, aux_info, weight=float(labels.numel()))
             if hasattr(model, "_batch_n_id"):
                 model._batch_n_id = None
 
         train_loss = total_loss / max(total_examples, 1)
+        aux_stats = summarize_aux_info_stats(aux_sums, aux_counts)
         if epoch % int(cfg.task.eval_every) != 0:
             logger.info("Epoch %05d | Train Loss %.4f", epoch, train_loss)
+            if aux_stats:
+                logger.info("Aux %s", format_aux_info_stats(aux_stats))
             continue
 
         z = infer_all_embeddings(model, data, device, uses_graph, inference_batch_size, inference_mode)
         z_eval = _prepare_eval_embeddings(z, device, eval_preload_node_emb, logger)
         val_metrics = _evaluate_split(z_eval, predictor, data.edge_split.valid, device, int(cfg.task.eval_edge_batch_size))
         logger.info("Epoch %05d | Train Loss %.4f", epoch, train_loss)
+        if aux_stats:
+            logger.info("Aux %s", format_aux_info_stats(aux_stats))
         logger.info(
             "Val MRR %.2f | Val H@1 %.2f | Val H@3 %.2f | Val H@10 %.2f",
             format_pct(val_metrics["mrr"]),

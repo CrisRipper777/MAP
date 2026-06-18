@@ -1,16 +1,18 @@
 name: map_mag
 
-hidden_dim: 1024
+hidden_dim: 512
 dropout: 0.2
 norm: layernorm
 
 # Structure-aware diffusion path.
-num_hops: 3
+num_hops: 2
+# Keep NeighborLoader sampling depth aligned with MAP-MAG diffusion depth.
+num_layers: ${model.num_hops}
 restart: 0.15
 diffusion_add_self_loops: true
 
 # Semantic prototype path.
-num_prototypes: 32
+num_prototypes: 16
 lambda_proto: 0.01
 
 # Router balance regularization.
@@ -27,4 +29,4 @@ self_only: false
 
 # MAP-MAG can train with sampled subgraphs. Set true for exact full-graph
 # training on small graphs if desired.
-full_graph_training: false
+full_graph_training: true

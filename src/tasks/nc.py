@@ -11,7 +11,14 @@ from sklearn.metrics import f1_score
 
 from src.data import MAGData
 from src.models import build_model
-from src.tasks.common import clone_state_dict, load_state_dict_cpu, resolve_num_neighbors
+from src.tasks.common import (
+    clone_state_dict,
+    format_aux_info_stats,
+    load_state_dict_cpu,
+    resolve_num_neighbors,
+    summarize_aux_info_stats,
+    update_aux_info_stats,
+)
 from src.tasks.inference import infer_all_embeddings, resolve_inference_mode
 from src.utils.metrics import format_pct
 from src.utils.seeds import set_seed
@@ -132,9 +139,11 @@ def _run_single_nc(cfg, data: MAGData, device: torch.device, logger: logging.Log
         classifier.train()
         total_loss = 0.0
         total_examples = 0
+        aux_sums: dict[str, float] = {}
+        aux_counts: dict[str, float] = {}
         if full_graph_training:
             optimizer.zero_grad(set_to_none=True)
-            z, _, _, aux_loss, _ = model(x_all, edge_index_all)
+            z, _, _, aux_loss, aux_info = model(x_all, edge_index_all)
             labels = y_all[train_idx_all]
             logits = classifier(z[train_idx_all])
             loss = criterion(logits, labels) + float(cfg.task.loss.aux_weight) * aux_loss
@@ -145,6 +154,7 @@ def _run_single_nc(cfg, data: MAGData, device: torch.device, logger: logging.Log
             optimizer.step()
             total_loss += float(loss.item()) * int(labels.numel())
             total_examples += int(labels.numel())
+            update_aux_info_stats(aux_sums, aux_counts, aux_info, weight=float(labels.numel()))
             del z
         else:
             for step, batch in enumerate(loader):
@@ -155,14 +165,14 @@ def _run_single_nc(cfg, data: MAGData, device: torch.device, logger: logging.Log
                     batch = batch.to(device)
                     if hasattr(model, "_batch_n_id"):
                         model._batch_n_id = batch.n_id
-                    z, _, _, aux_loss, _ = model(batch.x, batch.edge_index)
+                    z, _, _, aux_loss, aux_info = model(batch.x, batch.edge_index)
                     logits = classifier(z[: batch.batch_size])
                     labels = batch.y[: batch.batch_size]
                 else:
                     batch_idx = batch.to(device)
                     x_batch = x_all[batch_idx]
                     labels = y_all[batch_idx]
-                    z, _, _, aux_loss, _ = model(x_batch, None)
+                    z, _, _, aux_loss, aux_info = model(x_batch, None)
                     logits = classifier(z)
                 loss = criterion(logits, labels) + float(cfg.task.loss.aux_weight) * aux_loss
                 loss.backward()
@@ -172,17 +182,23 @@ def _run_single_nc(cfg, data: MAGData, device: torch.device, logger: logging.Log
                 optimizer.step()
                 total_loss += float(loss.item()) * int(labels.numel())
                 total_examples += int(labels.numel())
+                update_aux_info_stats(aux_sums, aux_counts, aux_info, weight=float(labels.numel()))
                 if hasattr(model, "_batch_n_id"):
                     model._batch_n_id = None
 
         train_loss = total_loss / max(total_examples, 1)
+        aux_stats = summarize_aux_info_stats(aux_sums, aux_counts)
         if epoch % int(cfg.task.eval_every) != 0:
             logger.info("Epoch %05d | Train Loss %.4f", epoch, train_loss)
+            if aux_stats:
+                logger.info("Aux %s", format_aux_info_stats(aux_stats))
             continue
 
         z = infer_all_embeddings(model, data, device, uses_graph, inference_batch_size, inference_mode)
         val_metrics = _evaluate_split(classifier, z, data.y, data.val_idx, device, inference_batch_size)
         logger.info("Epoch %05d | Train Loss %.4f", epoch, train_loss)
+        if aux_stats:
+            logger.info("Aux %s", format_aux_info_stats(aux_stats))
         logger.info(
             "Val Acc %.2f | Val F1 %.2f",
             format_pct(val_metrics["acc"]),
