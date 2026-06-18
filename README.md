@@ -9,6 +9,8 @@ It only supports:
 
 It uses frozen features from `../data` and does not train BERT, ViT, CLIP, Qwen-VL, or other large encoders.
 
+Implemented models: `mlp`, `gcn`, `sage`, `mmgcn`, `mgat`, `unigraph2`, `dip`.
+
 ## Datasets
 
 MAGB:
@@ -47,6 +49,13 @@ Run one LP experiment:
 python -m src.main dataset=sports-copurchase task=lp model=sage num_runs=3
 ```
 
+Run DiP:
+
+```bash
+python -m src.main dataset=ele-fashion task=nc model=dip num_runs=3
+python -m src.main dataset=sports-copurchase task=lp model=dip num_runs=3
+```
+
 Smoke test with a short run:
 
 ```bash
@@ -63,3 +72,5 @@ python -m src.main dataset=Movies task=nc model=mlp num_runs=1 task.epochs=1 tas
 - Dataset graphs do not add self-loops by default; models own their self-loop policy, e.g. GCN adds them internally.
 - `model=mlp` does not use graph sampling: NC uses node mini-batches and LP uses edge mini-batches.
 - GNN models such as `gcn` and `sage` use PyG `NeighborLoader` / `LinkNeighborLoader`.
+- `model=dip` trains with full-graph message passing by default (`model.full_graph_training=true`) so pseudo nodes aggregate graph-level modality context rather than sampled subgraphs. LP still uses edge-label mini-batches and removes the current positive labels from the full message graph.
+- `model=dip` implements the exact DiP global pseudo-node recurrence; its `layerwise` inference API currently falls back to the exact full-graph DiP pass because pseudo-node states depend on all nodes at each recurrent step.

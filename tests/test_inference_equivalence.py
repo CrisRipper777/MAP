@@ -5,7 +5,8 @@ import torch.nn as nn
 import pytest
 
 from src.data import MAGData
-from src.models import gcn, mlp, mmgcn, sage
+from src.models import dip, gcn, map_mag, mlp, mmgcn, sage
+from src.models.factory import build_model
 from src.tasks.inference import infer_all_embeddings, resolve_inference_mode
 
 
@@ -129,6 +130,72 @@ def test_mmgcn_layerwise_inference_matches_full_batch_forward() -> None:
 
     assert inferred.shape == full.shape
     assert max_abs_diff < 1e-4
+
+
+def test_dip_layerwise_inference_matches_full_batch_forward() -> None:
+    _, edge_index = _small_graph()
+    x = torch.arange(60, dtype=torch.float32).view(6, 10) / 10.0
+    cfg = _cfg()
+    cfg.model["d_model"] = 4
+    cfg.model["q_dim"] = 4
+    cfg.model["n_q"] = 2
+    cfg.model["mp_hops"] = 2
+    cfg.model["n_pnode_v"] = 3
+    cfg.model["n_pnode_t"] = 2
+    cfg.model["dropout"] = 0.0
+    cfg.model["norm"] = True
+    cfg.model["fusion_type"] = "path_integral"
+    cfg.model["embedding_dim"] = None
+
+    torch.manual_seed(123)
+    model = dip.Model(cfg, {"input_dim": 10, "text_dim": 4, "visual_dim": 6})
+    model.eval()
+
+    full, inferred, max_abs_diff = _compare_full_and_inference(model, x, edge_index)
+
+    assert full.shape == (6, 8)
+    assert inferred.shape == full.shape
+    assert max_abs_diff < 1e-4
+
+
+def test_map_mag_can_be_built_by_factory() -> None:
+    cfg = _cfg()
+    cfg.model["name"] = "map_mag"
+    cfg.model["hidden_dim"] = 5
+    cfg.model["num_prototypes"] = 4
+    cfg.model["num_hops"] = 1
+
+    model = build_model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+
+    assert isinstance(model, map_mag.MAPMAG)
+    assert model.out_dim == 5
+
+
+def test_map_mag_layerwise_inference_matches_full_batch_forward() -> None:
+    _, edge_index = _small_graph()
+    x = torch.arange(60, dtype=torch.float32).view(6, 10) / 10.0
+    cfg = _cfg()
+    cfg.model["hidden_dim"] = 5
+    cfg.model["num_prototypes"] = 4
+    cfg.model["num_hops"] = 2
+    cfg.model["lambda_proto"] = 0.01
+    cfg.model["lambda_gate"] = 0.001
+
+    torch.manual_seed(123)
+    model = map_mag.Model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+    model.eval()
+
+    full, inferred, max_abs_diff = _compare_full_and_inference(model, x, edge_index)
+    z, _, _, aux_loss, aux_info = model(x, edge_index)
+
+    assert full.shape == (6, 5)
+    assert inferred.shape == full.shape
+    assert max_abs_diff < 1e-4
+    assert z.shape == full.shape
+    assert aux_loss.dim() == 0
+    assert torch.isfinite(z).all()
+    assert torch.isfinite(aux_loss)
+    assert {"mean_r_text", "mean_r_visual", "mean_p_self", "mean_p_struct", "mean_p_proto"} <= set(aux_info)
 
 
 def test_mmgcn_uses_global_batch_node_ids_for_id_embeddings() -> None:

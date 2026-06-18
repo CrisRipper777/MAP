@@ -22,6 +22,12 @@ def _uses_graph_encoder(cfg) -> bool:
     return str(cfg.model.name).lower() != "mlp"
 
 
+def _uses_full_graph_training(model, cfg) -> bool:
+    if "full_graph_training" in cfg.model:
+        return bool(cfg.model.full_graph_training)
+    return bool(getattr(model, "requires_full_graph_training", False))
+
+
 def _edge_keys(edge_index: torch.Tensor, num_nodes: int) -> torch.Tensor:
     return edge_index[0].long() * int(num_nodes) + edge_index[1].long()
 
@@ -95,14 +101,17 @@ def _sample_filtered_negative_targets(
 
 
 def _build_epoch_train_labels(
-    train_pos_edge_index: torch.Tensor,
+    train_pos_edge_index: torch.Tensor | EdgeSplit,
     num_nodes: int,
     num_neg: int,
     forbidden_keys: torch.Tensor,
     generator: torch.Generator,
     train_pos_per_epoch: int | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    pos_edge_index = train_pos_edge_index
+    if isinstance(train_pos_edge_index, EdgeSplit):
+        pos_edge_index = edge_dict_to_index(train_pos_edge_index.train).cpu()
+    else:
+        pos_edge_index = train_pos_edge_index
     if train_pos_per_epoch is not None and train_pos_per_epoch < pos_edge_index.size(1):
         perm = torch.randperm(pos_edge_index.size(1), generator=generator)[:train_pos_per_epoch]
         pos_edge_index = pos_edge_index[:, perm]
@@ -265,8 +274,13 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
     )
     criterion = torch.nn.BCEWithLogitsLoss()
     uses_graph = _uses_graph_encoder(cfg)
-    loader_name = "LinkNeighborLoader" if uses_graph else "EdgeLabelDataLoader"
-    x_all = data.x.to(device) if not uses_graph else None
+    full_graph_training = uses_graph and _uses_full_graph_training(model, cfg)
+    if full_graph_training:
+        loader_name = "FullGraphEdgeLabelDataLoader"
+    else:
+        loader_name = "LinkNeighborLoader" if uses_graph else "EdgeLabelDataLoader"
+    x_all = data.x.to(device) if (not uses_graph or full_graph_training) else None
+    edge_index_all = data.edge_index.to(device) if full_graph_training else None
     undirected_filter = bool(data.edge_split.metadata.get("undirected", cfg.dataset.get("make_undirected", True)))
     forbidden_keys = _build_forbidden_edge_keys(data.edge_split, data.num_nodes, undirected=undirected_filter)
     neg_generator = torch.Generator().manual_seed(seed)
@@ -282,7 +296,10 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
     if train_pos_per_epoch is not None:
         train_pos_per_epoch = int(train_pos_per_epoch)
     logger.info("Loader: %s", loader_name)
-    if uses_graph:
+    if full_graph_training:
+        logger.info("Train full graph: enabled for global pseudo-node pathways")
+        logger.info("Train edge label batches still exclude current positive labels from the full message graph")
+    elif uses_graph:
         logger.info("Train neighbor sampling: %s", resolve_num_neighbors(cfg))
     logger.info("Inference mode: %s", inference_mode)
     logger.info("Train negative sampling: global filtered | num_neg=%d", int(cfg.task.num_train_neg))
@@ -315,7 +332,9 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
             neg_generator,
             train_pos_per_epoch=train_pos_per_epoch,
         )
-        if uses_graph:
+        if full_graph_training:
+            loader = _build_edge_loader(cfg, edge_label_index, edge_label)
+        elif uses_graph:
             loader = _build_link_loader(cfg, data, edge_label_index, edge_label)
         else:
             loader = _build_edge_loader(cfg, edge_label_index, edge_label)
@@ -324,7 +343,20 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
             if max_train_batches is not None and step >= int(max_train_batches):
                 break
             optimizer.zero_grad(set_to_none=True)
-            if uses_graph:
+            if full_graph_training:
+                edges, labels = batch
+                edge_label_index_batch = edges.t().contiguous().to(device)
+                labels = labels.to(device)
+                message_edge_index = _exclude_positive_label_edges_from_message_graph(
+                    edge_index_all,
+                    edge_label_index_batch,
+                    labels,
+                    num_nodes=int(data.num_nodes),
+                )
+                z, _, _, aux_loss, _ = model(x_all, message_edge_index)
+                src, dst = edge_label_index_batch
+                logits = predictor.score_pairs(z[src], z[dst])
+            elif uses_graph:
                 batch = batch.to(device)
                 if hasattr(model, "_batch_n_id"):
                     model._batch_n_id = batch.n_id

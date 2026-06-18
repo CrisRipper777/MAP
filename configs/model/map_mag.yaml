@@ -1,0 +1,30 @@
+name: map_mag
+
+hidden_dim: 1024
+dropout: 0.2
+norm: layernorm
+
+# Structure-aware diffusion path.
+num_hops: 3
+restart: 0.15
+diffusion_add_self_loops: true
+
+# Semantic prototype path.
+num_prototypes: 32
+lambda_proto: 0.01
+
+# Router balance regularization.
+lambda_gate: 0.001
+use_gate_loss: true
+
+# Ablation switches.
+use_self_path: true
+use_structure_path: true
+use_prototype_path: true
+use_preference_router: true
+structure_low_pass_only: false
+self_only: false
+
+# MAP-MAG can train with sampled subgraphs. Set true for exact full-graph
+# training on small graphs if desired.
+full_graph_training: false

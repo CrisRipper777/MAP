@@ -22,6 +22,12 @@ def _uses_graph_encoder(cfg) -> bool:
     return str(cfg.model.name).lower() != "mlp"
 
 
+def _uses_full_graph_training(model, cfg) -> bool:
+    if "full_graph_training" in cfg.model:
+        return bool(cfg.model.full_graph_training)
+    return bool(getattr(model, "requires_full_graph_training", False))
+
+
 @torch.no_grad()
 def _evaluate_split(
     classifier,
@@ -68,8 +74,13 @@ def _run_single_nc(cfg, data: MAGData, device: torch.device, logger: logging.Log
     )
     criterion = nn.CrossEntropyLoss()
     uses_graph = _uses_graph_encoder(cfg)
+    full_graph_training = uses_graph and _uses_full_graph_training(model, cfg)
 
-    if uses_graph:
+    num_neighbors = None
+    if full_graph_training:
+        loader = None
+        loader_name = "FullGraph"
+    elif uses_graph:
         pyg_data = Data(x=data.x, edge_index=data.edge_index, y=data.y)
         num_neighbors = resolve_num_neighbors(cfg)
         loader = NeighborLoader(
@@ -87,8 +98,10 @@ def _run_single_nc(cfg, data: MAGData, device: torch.device, logger: logging.Log
             shuffle=True,
         )
         loader_name = "NodeDataLoader"
-    x_all = data.x.to(device) if not uses_graph else None
-    y_all = data.y.to(device) if not uses_graph else None
+    x_all = data.x.to(device) if (not uses_graph or full_graph_training) else None
+    y_all = data.y.to(device) if (not uses_graph or full_graph_training) else None
+    edge_index_all = data.edge_index.to(device) if full_graph_training else None
+    train_idx_all = data.train_idx.to(device) if full_graph_training else None
 
     logger.info(
         "[Run %d/%d] seed=%d | model params=%d",
@@ -98,7 +111,9 @@ def _run_single_nc(cfg, data: MAGData, device: torch.device, logger: logging.Log
         count_parameters(model) + count_parameters(classifier),
     )
     logger.info("Loader: %s", loader_name)
-    if uses_graph:
+    if full_graph_training:
+        logger.info("Train full graph: enabled for global pseudo-node pathways")
+    elif uses_graph:
         logger.info("Train neighbor sampling: %s", num_neighbors)
     logger.info("Inference mode: %s", inference_mode)
     logger.info("Training...")
@@ -117,23 +132,11 @@ def _run_single_nc(cfg, data: MAGData, device: torch.device, logger: logging.Log
         classifier.train()
         total_loss = 0.0
         total_examples = 0
-        for step, batch in enumerate(loader):
-            if max_train_batches is not None and step >= int(max_train_batches):
-                break
+        if full_graph_training:
             optimizer.zero_grad(set_to_none=True)
-            if uses_graph:
-                batch = batch.to(device)
-                if hasattr(model, "_batch_n_id"):
-                    model._batch_n_id = batch.n_id
-                z, _, _, aux_loss, _ = model(batch.x, batch.edge_index)
-                logits = classifier(z[: batch.batch_size])
-                labels = batch.y[: batch.batch_size]
-            else:
-                batch_idx = batch.to(device)
-                x_batch = x_all[batch_idx]
-                labels = y_all[batch_idx]
-                z, _, _, aux_loss, _ = model(x_batch, None)
-                logits = classifier(z)
+            z, _, _, aux_loss, _ = model(x_all, edge_index_all)
+            labels = y_all[train_idx_all]
+            logits = classifier(z[train_idx_all])
             loss = criterion(logits, labels) + float(cfg.task.loss.aux_weight) * aux_loss
             loss.backward()
             torch.nn.utils.clip_grad_norm_(
@@ -142,8 +145,35 @@ def _run_single_nc(cfg, data: MAGData, device: torch.device, logger: logging.Log
             optimizer.step()
             total_loss += float(loss.item()) * int(labels.numel())
             total_examples += int(labels.numel())
-            if hasattr(model, "_batch_n_id"):
-                model._batch_n_id = None
+            del z
+        else:
+            for step, batch in enumerate(loader):
+                if max_train_batches is not None and step >= int(max_train_batches):
+                    break
+                optimizer.zero_grad(set_to_none=True)
+                if uses_graph:
+                    batch = batch.to(device)
+                    if hasattr(model, "_batch_n_id"):
+                        model._batch_n_id = batch.n_id
+                    z, _, _, aux_loss, _ = model(batch.x, batch.edge_index)
+                    logits = classifier(z[: batch.batch_size])
+                    labels = batch.y[: batch.batch_size]
+                else:
+                    batch_idx = batch.to(device)
+                    x_batch = x_all[batch_idx]
+                    labels = y_all[batch_idx]
+                    z, _, _, aux_loss, _ = model(x_batch, None)
+                    logits = classifier(z)
+                loss = criterion(logits, labels) + float(cfg.task.loss.aux_weight) * aux_loss
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(
+                    list(model.parameters()) + list(classifier.parameters()), max_norm=1.0
+                )
+                optimizer.step()
+                total_loss += float(loss.item()) * int(labels.numel())
+                total_examples += int(labels.numel())
+                if hasattr(model, "_batch_n_id"):
+                    model._batch_n_id = None
 
         train_loss = total_loss / max(total_examples, 1)
         if epoch % int(cfg.task.eval_every) != 0:
