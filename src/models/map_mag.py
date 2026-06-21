@@ -93,6 +93,16 @@ class MAPMAG(nn.Module):
         self.lambda_proto = float(cfg.model.get("lambda_proto", 0.01))
         self.lambda_gate = float(cfg.model.get("lambda_gate", 0.001))
         self.use_gate_loss = bool(cfg.model.get("use_gate_loss", True))
+        self.router_temperature = float(cfg.model.get("router_temperature", 2.0))
+        if self.router_temperature <= 0.0:
+            raise ValueError(f"router_temperature must be positive, got {self.router_temperature}")
+        self.gamma_min = float(cfg.model.get("gamma_min", 0.05))
+        self.gamma_max = float(cfg.model.get("gamma_max", 0.95))
+        if not (0.0 <= self.gamma_min < self.gamma_max <= 1.0):
+            raise ValueError(
+                f"Expected 0 <= gamma_min < gamma_max <= 1, got "
+                f"gamma_min={self.gamma_min}, gamma_max={self.gamma_max}"
+            )
 
         self.text_proj = ProjectionMLP(self.text_dim, hidden_dim, dropout, norm)
         self.visual_proj = ProjectionMLP(self.visual_dim, hidden_dim, dropout, norm)
@@ -216,7 +226,7 @@ class MAPMAG(nn.Module):
             raise ValueError("At least one MAP-MAG path must be enabled")
 
         if self.use_preference_router and active_count > 1:
-            weights = torch.softmax(router_logits, dim=-1)
+            weights = torch.softmax(router_logits / self.router_temperature, dim=-1)
             weights = weights * mask
             return weights / weights.sum(dim=-1, keepdim=True).clamp_min(self.eps)
         return mask.expand(router_logits.size(0), -1) / float(active_count)
@@ -257,7 +267,8 @@ class MAPMAG(nn.Module):
         z_low = self._diffuse(h0, edge_index)
         z_high = h0 - z_low
         gamma_input = torch.cat([h0, s_t, s_v, log_degree], dim=-1)
-        gamma = torch.sigmoid(self.freq_gate(gamma_input))
+        gamma_raw = torch.sigmoid(self.freq_gate(gamma_input))
+        gamma = self.gamma_min + (self.gamma_max - self.gamma_min) * gamma_raw
         if self.structure_low_pass_only:
             z_struct = z_low
         else:
