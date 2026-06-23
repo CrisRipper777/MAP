@@ -5,7 +5,7 @@ import torch.nn as nn
 import pytest
 
 from src.data import MAGData
-from src.models import dip, gcn, map_mag, mlp, mmgcn, sage
+from src.models import dip, gcn, map_mag, map_mag_v1, mlp, mmgcn, sage
 from src.models.factory import build_model
 from src.tasks.inference import infer_all_embeddings, resolve_inference_mode
 
@@ -168,6 +168,19 @@ def test_map_mag_can_be_built_by_factory() -> None:
     model = build_model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
 
     assert isinstance(model, map_mag.MAPMAG)
+    assert model.out_dim == 5
+
+
+def test_map_mag_v1_can_be_built_by_factory() -> None:
+    cfg = _cfg()
+    cfg.model["name"] = "map_mag_v1"
+    cfg.model["hidden_dim"] = 5
+    cfg.model["num_prototypes"] = 4
+    cfg.model["num_hops"] = 1
+
+    model = build_model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+
+    assert isinstance(model, map_mag_v1.MAPMAG)
     assert model.out_dim == 5
 
 

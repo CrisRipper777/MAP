@@ -1,4 +1,12 @@
-name: map_mag
+# Frozen MAP-MAG v1 config and code snapshot.
+#
+# Use with:
+#   python src/main.py model=map_mag_v1 ...
+#
+# Keep name=map_mag_v1 so the model factory imports src.models.map_mag_v1.
+# This freezes both the v1 hyperparameter surface and implementation behavior.
+name: map_mag_v1
+version: map_mag_v1
 
 hidden_dim: 256
 dropout: 0.2
@@ -15,14 +23,14 @@ diffusion_add_self_loops: true
 num_prototypes: 16
 lambda_proto: 0.1
 
-# Router balance regularization.
+# Router and reliability controls.
 reliability_min: 0.1
 router_temperature: 3.0
 lambda_gate: 0.01
 use_gate_loss: true
 gate_warmup_epochs: 10
 
-# Frequency gate range. This softly bounds gamma away from exact 0/1.
+# Frequency gate controls.
 gamma_min: 0.05
 gamma_max: 0.95
 gamma_temperature: 3.0
@@ -37,6 +45,6 @@ use_preference_router: true
 structure_low_pass_only: false
 self_only: false
 
-# MAP-MAG can train with sampled subgraphs. Set true for exact full-graph
-# training on small graphs if desired.
+# MAP-MAG v1 uses full-graph training by default so diffusion uses the full
+# message graph rather than repeated propagation inside sampled subgraphs.
 full_graph_training: true
