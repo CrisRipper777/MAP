@@ -328,6 +328,8 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
 
     for epoch in range(1, int(cfg.task.epochs) + 1):
         model.train()
+        if hasattr(model, "set_epoch"):
+            model.set_epoch(epoch)
         predictor.train()
         total_loss = 0.0
         total_examples = 0

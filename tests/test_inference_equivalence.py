@@ -198,6 +198,51 @@ def test_map_mag_layerwise_inference_matches_full_batch_forward() -> None:
     assert {"mean_r_text", "mean_r_visual", "mean_p_self", "mean_p_struct", "mean_p_proto"} <= set(aux_info)
 
 
+def test_map_mag_warmup_and_fixed_gamma_controls() -> None:
+    _, edge_index = _small_graph()
+    x = torch.arange(60, dtype=torch.float32).view(6, 10) / 10.0
+    cfg = _cfg()
+    cfg.model["hidden_dim"] = 5
+    cfg.model["num_prototypes"] = 4
+    cfg.model["num_hops"] = 2
+    cfg.model["reliability_min"] = 0.2
+    cfg.model["gate_warmup_epochs"] = 2
+    cfg.model["gamma_warmup_epochs"] = 2
+
+    torch.manual_seed(123)
+    model = map_mag.Model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+    model.eval()
+    model.set_epoch(1)
+
+    with torch.no_grad():
+        z, _, _, aux_loss, aux_info = model(x, edge_index)
+
+    assert z.shape == (6, 5)
+    assert aux_loss.device == z.device
+    assert aux_info["mean_r_text"] >= 0.2
+    assert aux_info["mean_r_visual"] >= 0.2
+    assert torch.allclose(aux_info["mean_p_self"], torch.tensor(1.0 / 3.0), atol=1e-6)
+    assert torch.allclose(aux_info["mean_p_struct"], torch.tensor(1.0 / 3.0), atol=1e-6)
+    assert torch.allclose(aux_info["mean_p_proto"], torch.tensor(1.0 / 3.0), atol=1e-6)
+    assert torch.allclose(aux_info["mean_gamma"], torch.tensor(0.5), atol=1e-6)
+
+    cfg_fixed = _cfg()
+    cfg_fixed.model["hidden_dim"] = 5
+    cfg_fixed.model["num_prototypes"] = 4
+    cfg_fixed.model["fixed_gamma"] = 0.4
+    cfg_fixed.model["gamma_warmup_epochs"] = 2
+
+    torch.manual_seed(123)
+    fixed_model = map_mag.Model(cfg_fixed, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+    fixed_model.eval()
+    fixed_model.set_epoch(1)
+
+    with torch.no_grad():
+        _, _, _, _, fixed_aux_info = fixed_model(x, edge_index)
+
+    assert torch.allclose(fixed_aux_info["mean_gamma"], torch.tensor(0.4), atol=1e-6)
+
+
 def test_mmgcn_uses_global_batch_node_ids_for_id_embeddings() -> None:
     torch.manual_seed(123)
     model = mmgcn.Model(_cfg(), {"input_dim": 10, "num_nodes": 8, "text_dim": 4, "visual_dim": 6})

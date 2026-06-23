@@ -93,9 +93,15 @@ class MAPMAG(nn.Module):
         self.lambda_proto = float(cfg.model.get("lambda_proto", 0.01))
         self.lambda_gate = float(cfg.model.get("lambda_gate", 0.001))
         self.use_gate_loss = bool(cfg.model.get("use_gate_loss", True))
+        self.reliability_min = float(cfg.model.get("reliability_min", 0.0))
+        if not (0.0 <= self.reliability_min <= 1.0):
+            raise ValueError(f"reliability_min must be in [0, 1], got {self.reliability_min}")
         self.router_temperature = float(cfg.model.get("router_temperature", 2.0))
         if self.router_temperature <= 0.0:
             raise ValueError(f"router_temperature must be positive, got {self.router_temperature}")
+        self.gate_warmup_epochs = int(cfg.model.get("gate_warmup_epochs", 0))
+        if self.gate_warmup_epochs < 0:
+            raise ValueError(f"gate_warmup_epochs must be >= 0, got {self.gate_warmup_epochs}")
         self.gamma_min = float(cfg.model.get("gamma_min", 0.05))
         self.gamma_max = float(cfg.model.get("gamma_max", 0.95))
         if not (0.0 <= self.gamma_min < self.gamma_max <= 1.0):
@@ -103,6 +109,18 @@ class MAPMAG(nn.Module):
                 f"Expected 0 <= gamma_min < gamma_max <= 1, got "
                 f"gamma_min={self.gamma_min}, gamma_max={self.gamma_max}"
             )
+        self.gamma_temperature = float(cfg.model.get("gamma_temperature", 1.0))
+        if self.gamma_temperature <= 0.0:
+            raise ValueError(f"gamma_temperature must be positive, got {self.gamma_temperature}")
+        self.gamma_warmup_epochs = int(cfg.model.get("gamma_warmup_epochs", 0))
+        if self.gamma_warmup_epochs < 0:
+            raise ValueError(f"gamma_warmup_epochs must be >= 0, got {self.gamma_warmup_epochs}")
+        fixed_gamma = cfg.model.get("fixed_gamma", None)
+        if isinstance(fixed_gamma, str) and fixed_gamma.strip().lower() in {"none", "null"}:
+            fixed_gamma = None
+        self.fixed_gamma = None if fixed_gamma is None else float(fixed_gamma)
+        if self.fixed_gamma is not None and not (0.0 <= self.fixed_gamma <= 1.0):
+            raise ValueError(f"fixed_gamma must be in [0, 1] or null, got {self.fixed_gamma}")
 
         self.text_proj = ProjectionMLP(self.text_dim, hidden_dim, dropout, norm)
         self.visual_proj = ProjectionMLP(self.visual_dim, hidden_dim, dropout, norm)
@@ -121,6 +139,21 @@ class MAPMAG(nn.Module):
 
         self.output_mlp = _make_mlp(hidden_dim, hidden_dim, hidden_dim, dropout, norm)
         self.output_norm = nn.LayerNorm(hidden_dim)
+        self.register_buffer("_current_epoch", torch.zeros((), dtype=torch.long), persistent=True)
+
+    def set_epoch(self, epoch: int) -> None:
+        """Allow trainers to drive optional MAP-MAG warmup schedules."""
+        self._current_epoch.fill_(max(int(epoch), 0))
+
+    def _warmup_alpha(self, warmup_epochs: int) -> float:
+        if warmup_epochs <= 0:
+            return 1.0
+        epoch = int(self._current_epoch.item())
+        if epoch <= 0:
+            return 1.0
+        if epoch > warmup_epochs:
+            return 1.0
+        return max(0.0, min(1.0, float(epoch - 1) / float(warmup_epochs)))
 
     def _split_features(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         if x.dtype == torch.long:
@@ -168,7 +201,10 @@ class MAPMAG(nn.Module):
         mlp: nn.Module,
     ) -> torch.Tensor:
         rel_input = torch.cat([h, mean_h, h - mean_h, h * mean_h], dim=-1)
-        return torch.sigmoid(mlp(rel_input))
+        gate = torch.sigmoid(mlp(rel_input))
+        if self.reliability_min <= 0.0:
+            return gate
+        return self.reliability_min + (1.0 - self.reliability_min) * gate
 
     def _diffuse(self, h0: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
         if self.num_hops <= 0:
@@ -225,11 +261,27 @@ class MAPMAG(nn.Module):
         if active_count <= 0:
             raise ValueError("At least one MAP-MAG path must be enabled")
 
+        uniform = mask.expand(router_logits.size(0), -1) / float(active_count)
         if self.use_preference_router and active_count > 1:
             weights = torch.softmax(router_logits / self.router_temperature, dim=-1)
             weights = weights * mask
-            return weights / weights.sum(dim=-1, keepdim=True).clamp_min(self.eps)
-        return mask.expand(router_logits.size(0), -1) / float(active_count)
+            learned = weights / weights.sum(dim=-1, keepdim=True).clamp_min(self.eps)
+            alpha = self._warmup_alpha(self.gate_warmup_epochs)
+            if alpha < 1.0:
+                return (1.0 - alpha) * uniform + alpha * learned
+            return learned
+        return uniform
+
+    def _frequency_gate(self, gamma_input: torch.Tensor) -> torch.Tensor:
+        if self.fixed_gamma is not None:
+            return gamma_input.new_full((gamma_input.size(0), 1), self.fixed_gamma)
+
+        gamma_raw = torch.sigmoid(self.freq_gate(gamma_input) / self.gamma_temperature)
+        gamma = self.gamma_min + (self.gamma_max - self.gamma_min) * gamma_raw
+        alpha = self._warmup_alpha(self.gamma_warmup_epochs)
+        if alpha < 1.0:
+            gamma = (1.0 - alpha) * 0.5 + alpha * gamma
+        return gamma
 
     def _gate_loss(self, p: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
         active_count = int(mask.sum().item())
@@ -267,8 +319,7 @@ class MAPMAG(nn.Module):
         z_low = self._diffuse(h0, edge_index)
         z_high = h0 - z_low
         gamma_input = torch.cat([h0, s_t, s_v, log_degree], dim=-1)
-        gamma_raw = torch.sigmoid(self.freq_gate(gamma_input))
-        gamma = self.gamma_min + (self.gamma_max - self.gamma_min) * gamma_raw
+        gamma = self._frequency_gate(gamma_input)
         if self.structure_low_pass_only:
             z_struct = z_low
         else:
