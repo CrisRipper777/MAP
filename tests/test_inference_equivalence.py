@@ -7,7 +7,7 @@ import torch.nn as nn
 import pytest
 
 from src.data import EdgeSplit, MAGData
-from src.models import dip, gcn, map_mag, map_mag_v1, mlp, mmgcn, sage
+from src.models import dip, gcn, map_mag, map_mag_v1, map_mag_v2, mlp, mmgcn, sage
 from src.models.factory import build_model
 from src.tasks.analysis import export_node_aux_stats
 from src.tasks.inference import infer_all_embeddings, resolve_inference_mode
@@ -185,6 +185,154 @@ def test_map_mag_v1_can_be_built_by_factory() -> None:
 
     assert isinstance(model, map_mag_v1.MAPMAG)
     assert model.out_dim == 5
+
+
+def _map_mag_v2_cfg(**overrides) -> _CfgNode:
+    cfg = _cfg()
+    cfg.model.update(
+        {
+            "name": "map_mag_v2",
+            "hidden_dim": 5,
+            "num_hops": 1,
+            "num_layers": 1,
+            "dropout": 0.0,
+            "norm": "layernorm",
+            "reliability_min": 0.1,
+            "reliability_mode": "single",
+            "use_semantic_edge_weight": True,
+            "edge_weight_mode": "avg_cos",
+            "edge_weight_min": 0.1,
+            "edge_weight_temperature": 2.0,
+            "edge_weight_learnable_init": 1.0,
+            "structure_mode": "lowpass",
+            "residual_eta_max": 0.2,
+            "use_self_residual": False,
+            "self_residual_max": 0.2,
+            "use_prototype_path": False,
+            "num_prototypes": 4,
+            "lambda_proto": 0.0,
+            "lambda_edge_reg": 0.0,
+            "full_graph_training": True,
+        }
+    )
+    cfg.model.update(overrides)
+    return cfg
+
+
+def _assert_map_mag_v2_forward_ok(cfg: _CfgNode, edge_index: torch.Tensor | None = None) -> dict:
+    if edge_index is None:
+        _, edge_index = _small_graph()
+    x = torch.arange(60, dtype=torch.float32).view(6, 10) / 10.0
+    torch.manual_seed(123)
+    model = map_mag_v2.Model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+    model.eval()
+
+    with torch.no_grad():
+        z, _, _, aux_loss, aux_info = model(x, edge_index)
+
+    required = {
+        "mean_r_text",
+        "mean_r_visual",
+        "mean_edge_weight",
+        "std_edge_weight",
+        "min_edge_weight",
+        "max_edge_weight",
+        "mean_cos_text",
+        "mean_cos_visual",
+        "mean_lambda_text",
+        "mean_lambda_visual",
+        "mean_degree",
+        "structure_mode",
+    }
+    assert z.shape == (6, 5)
+    assert aux_loss.dim() == 0
+    assert torch.isfinite(z).all()
+    assert torch.isfinite(aux_loss)
+    assert required <= set(aux_info)
+    for value in aux_info.values():
+        if torch.is_tensor(value):
+            assert torch.isfinite(value).all()
+    return aux_info
+
+
+def test_map_mag_v2_can_be_built_by_factory() -> None:
+    cfg = _map_mag_v2_cfg()
+
+    model = build_model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+
+    assert isinstance(model, map_mag_v2.MAPMAGV2)
+    assert model.out_dim == 5
+
+
+def test_map_mag_v2_layerwise_inference_matches_full_batch_forward() -> None:
+    _, edge_index = _small_graph()
+    x = torch.arange(60, dtype=torch.float32).view(6, 10) / 10.0
+    cfg = _map_mag_v2_cfg()
+
+    torch.manual_seed(123)
+    model = map_mag_v2.Model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+    model.eval()
+
+    full, inferred, max_abs_diff = _compare_full_and_inference(model, x, edge_index)
+
+    assert full.shape == (6, 5)
+    assert inferred.shape == full.shape
+    assert max_abs_diff < 1e-4
+
+
+@pytest.mark.parametrize(
+    "edge_weight_mode",
+    ["avg_cos", "text_only", "visual_only", "reliability_aware", "learnable_scalar"],
+)
+def test_map_mag_v2_semantic_edge_weight_modes_run(edge_weight_mode: str) -> None:
+    aux_info = _assert_map_mag_v2_forward_ok(_map_mag_v2_cfg(edge_weight_mode=edge_weight_mode))
+
+    assert aux_info["structure_mode"] == "lowpass"
+    assert 0.1 <= float(aux_info["min_edge_weight"]) <= float(aux_info["max_edge_weight"]) <= 1.0
+
+
+def test_map_mag_v2_can_disable_semantic_edge_weights() -> None:
+    aux_info = _assert_map_mag_v2_forward_ok(
+        _map_mag_v2_cfg(use_semantic_edge_weight=False, edge_weight_mode="learnable_scalar")
+    )
+
+    assert torch.allclose(aux_info["mean_edge_weight"], torch.tensor(1.0), atol=1e-6)
+    assert torch.allclose(aux_info["std_edge_weight"], torch.tensor(0.0), atol=1e-6)
+
+
+@pytest.mark.parametrize("structure_mode", ["lowpass", "lowpass_residual", "original_v1_gamma"])
+def test_map_mag_v2_structure_modes_run(structure_mode: str) -> None:
+    aux_info = _assert_map_mag_v2_forward_ok(_map_mag_v2_cfg(structure_mode=structure_mode))
+
+    assert aux_info["structure_mode"] == structure_mode
+    if structure_mode == "lowpass_residual":
+        assert "mean_eta_residual" in aux_info
+    if structure_mode == "original_v1_gamma":
+        assert "mean_gamma" in aux_info
+
+
+@pytest.mark.parametrize("use_self_residual", [False, True])
+@pytest.mark.parametrize("use_prototype_path", [False, True])
+def test_map_mag_v2_optional_paths_run(use_self_residual: bool, use_prototype_path: bool) -> None:
+    aux_info = _assert_map_mag_v2_forward_ok(
+        _map_mag_v2_cfg(
+            use_self_residual=use_self_residual,
+            use_prototype_path=use_prototype_path,
+            lambda_proto=0.1 if use_prototype_path else 0.0,
+        )
+    )
+
+    assert ("mean_alpha_self" in aux_info) == use_self_residual
+    assert ("mean_p_proto" in aux_info) == use_prototype_path
+
+
+def test_map_mag_v2_empty_edge_index_has_finite_edge_stats() -> None:
+    empty_edge_index = torch.empty((2, 0), dtype=torch.long)
+    aux_info = _assert_map_mag_v2_forward_ok(_map_mag_v2_cfg(), edge_index=empty_edge_index)
+
+    assert torch.allclose(aux_info["mean_edge_weight"], torch.tensor(0.0), atol=1e-6)
+    assert torch.allclose(aux_info["std_edge_weight"], torch.tensor(0.0), atol=1e-6)
+    assert torch.allclose(aux_info["mean_cos_text"], torch.tensor(0.0), atol=1e-6)
 
 
 def test_map_mag_v1_node_aux_stats_contains_required_values() -> None:
