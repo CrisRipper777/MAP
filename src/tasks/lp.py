@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 
 import torch
 from torch.utils.data import DataLoader as TorchDataLoader
@@ -19,7 +20,10 @@ from src.tasks.common import (
     summarize_aux_info_stats,
     update_aux_info_stats,
 )
+from src.tasks.analysis import export_node_aux_stats
 from src.tasks.inference import infer_all_embeddings, resolve_inference_mode
+from src.tasks.modality import iter_masked_data, modality_drop_key, modality_mask_key, modality_mask_eval_enabled
+from src.tasks.prototype_analysis import export_node_prototype_stats
 from src.utils.metrics import format_pct
 from src.utils.seeds import set_seed
 from src.utils.summary import count_parameters, mean_std
@@ -197,6 +201,59 @@ def _prepare_eval_embeddings(
     return z_eval
 
 
+def _evaluate_modality_masks(
+    cfg,
+    model,
+    predictor: LinkPredictor,
+    data: MAGData,
+    device: torch.device,
+    uses_graph: bool,
+    inference_mode: str,
+    inference_batch_size: int,
+    eval_preload_node_emb: bool,
+    seed: int,
+    full_test: dict[str, float],
+    logger: logging.Logger,
+) -> dict[str, float]:
+    if not modality_mask_eval_enabled(cfg):
+        return {}
+
+    output: dict[str, float] = {}
+    for mode, masked_data in iter_masked_data(cfg, data, seed):
+        mask_key = modality_mask_key(mode)
+        drop_key = modality_drop_key(mode)
+        z = infer_all_embeddings(model, masked_data, device, uses_graph, inference_batch_size, inference_mode)
+        z_eval = _prepare_eval_embeddings(z, device, eval_preload_node_emb, logger)
+        metrics = _evaluate_split(
+            z_eval,
+            predictor,
+            data.edge_split.test,
+            device,
+            int(cfg.task.eval_edge_batch_size),
+        )
+        output[f"{mask_key}_test_mrr"] = metrics["mrr"]
+        output[f"{mask_key}_test_hits@1"] = metrics["hits@1"]
+        output[f"{mask_key}_test_hits@3"] = metrics["hits@3"]
+        output[f"{mask_key}_test_hits@10"] = metrics["hits@10"]
+        output[f"{drop_key}_mrr"] = full_test["test_mrr"] - metrics["mrr"]
+        output[f"{drop_key}_hits@1"] = full_test["test_hits@1"] - metrics["hits@1"]
+        output[f"{drop_key}_hits@3"] = full_test["test_hits@3"] - metrics["hits@3"]
+        output[f"{drop_key}_hits@10"] = full_test["test_hits@10"] - metrics["hits@10"]
+        logger.info(
+            "Modality mask [%s] Test MRR %.2f | H@1 %.2f | H@3 %.2f | H@10 %.2f | Drop MRR %.2f",
+            mode,
+            format_pct(metrics["mrr"]),
+            format_pct(metrics["hits@1"]),
+            format_pct(metrics["hits@3"]),
+            format_pct(metrics["hits@10"]),
+            format_pct(output[f"{drop_key}_mrr"]),
+        )
+        del z_eval
+        del z
+        torch.cuda.empty_cache()
+    return output
+
+
 @torch.no_grad()
 def _evaluate_split(
     z: torch.Tensor,
@@ -256,7 +313,14 @@ def _evaluate_split(
     }
 
 
-def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Logger, run_id: int) -> dict[str, float]:
+def _run_single_lp(
+    cfg,
+    data: MAGData,
+    device: torch.device,
+    logger: logging.Logger,
+    run_id: int,
+    output_dir: str | Path | None,
+) -> dict[str, float]:
     seed = int(cfg.seed) + run_id
     set_seed(seed)
     inference_mode = resolve_inference_mode(cfg)
@@ -445,9 +509,56 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
         if stop_early:
             break
 
+    if output_dir is not None:
+        export_node_aux_stats(
+            cfg=cfg,
+            model=model,
+            data=data,
+            device=device,
+            output_dir=output_dir,
+            run_id=run_id,
+            tag="final_epoch",
+            task_name="lp",
+            logger=logger,
+        )
+        export_node_prototype_stats(
+            cfg=cfg,
+            model=model,
+            data=data,
+            device=device,
+            output_dir=output_dir,
+            run_id=run_id,
+            tag="final_epoch",
+            task_name="lp",
+            logger=logger,
+        )
+
     if best_model_state is not None and best_predictor_state is not None:
         load_state_dict_cpu(model, best_model_state)
         load_state_dict_cpu(predictor, best_predictor_state)
+        if output_dir is not None:
+            export_node_aux_stats(
+                cfg=cfg,
+                model=model,
+                data=data,
+                device=device,
+                output_dir=output_dir,
+                run_id=run_id,
+                tag="best_val",
+                task_name="lp",
+                logger=logger,
+            )
+            export_node_prototype_stats(
+                cfg=cfg,
+                model=model,
+                data=data,
+                device=device,
+                output_dir=output_dir,
+                run_id=run_id,
+                tag="best_val",
+                task_name="lp",
+                logger=logger,
+            )
         z = infer_all_embeddings(model, data, device, uses_graph, inference_batch_size, inference_mode)
         z_eval = _prepare_eval_embeddings(z, device, eval_preload_node_emb, logger)
         test_metrics = _evaluate_split(
@@ -463,6 +574,22 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
         best_test["test_hits@10"] = test_metrics["hits@10"]
         del z_eval
         del z
+        best_test.update(
+            _evaluate_modality_masks(
+                cfg,
+                model,
+                predictor,
+                data,
+                device,
+                uses_graph,
+                inference_mode,
+                inference_batch_size,
+                eval_preload_node_emb,
+                seed,
+                best_test,
+                logger,
+            )
+        )
 
     if not best_test:
         z = infer_all_embeddings(model, data, device, uses_graph, inference_batch_size, inference_mode)
@@ -478,6 +605,22 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
         }
         del z_eval
         del z
+        best_test.update(
+            _evaluate_modality_masks(
+                cfg,
+                model,
+                predictor,
+                data,
+                device,
+                uses_graph,
+                inference_mode,
+                inference_batch_size,
+                eval_preload_node_emb,
+                seed,
+                best_test,
+                logger,
+            )
+        )
 
     if hasattr(model, "_batch_n_id"):
         model._batch_n_id = None
@@ -498,10 +641,19 @@ def _run_single_lp(cfg, data: MAGData, device: torch.device, logger: logging.Log
     return best_test
 
 
-def run_lp(cfg, data: MAGData, device: torch.device, logger: logging.Logger) -> dict[str, tuple[float, float]]:
+def run_lp(
+    cfg,
+    data: MAGData,
+    device: torch.device,
+    logger: logging.Logger,
+    output_dir: str | Path | None = None,
+) -> dict[str, tuple[float, float]]:
     if data.edge_split is None:
         raise ValueError("LP data must contain edge_split")
-    run_results = [_run_single_lp(cfg, data, device, logger, run_id) for run_id in range(int(cfg.num_runs))]
+    run_results = [
+        _run_single_lp(cfg, data, device, logger, run_id, output_dir)
+        for run_id in range(int(cfg.num_runs))
+    ]
     output: dict[str, tuple[float, float]] = {}
     logger.info("============================================================")
     logger.info("Final Results over %d runs", int(cfg.num_runs))
@@ -518,5 +670,13 @@ def run_lp(cfg, data: MAGData, device: torch.device, logger: logging.Logger) -> 
         mean, std = mean_std(values)
         output[key] = (mean, std)
         logger.info("%s: %.2f ± %.2f", display_names[key], format_pct(mean), format_pct(std))
+    primary_keys = set(output)
+    for key in sorted(set().union(*(item.keys() for item in run_results)) - primary_keys):
+        values = [item[key] for item in run_results if key in item]
+        if len(values) != len(run_results):
+            continue
+        mean, std = mean_std(values)
+        output[key] = (mean, std)
+        logger.info("%s: %.2f ± %.2f", key, format_pct(mean), format_pct(std))
     logger.info("============================================================")
     return output

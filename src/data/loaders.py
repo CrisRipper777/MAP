@@ -91,6 +91,55 @@ def _as_index_tensor(value: Any) -> torch.Tensor:
     return torch.as_tensor(value, dtype=torch.long).contiguous()
 
 
+def _apply_feature_mode(data: MAGData, cfg: DictConfig) -> MAGData:
+    mode = str(cfg.dataset.get("feature_mode", "both")).strip().lower()
+    aliases = {
+        "full": "both",
+        "multi": "both",
+        "multimodal": "both",
+        "all": "both",
+        "text_only": "text",
+        "visual_only": "visual",
+        "image": "visual",
+        "image_only": "visual",
+    }
+    mode = aliases.get(mode, mode)
+    if mode == "both":
+        data.info = {**data.info, "feature_mode": "both"}
+        return data
+    if data.x_t is None or data.x_i is None:
+        raise ValueError(
+            f"dataset.feature_mode={mode!r} requires split text/visual features, "
+            f"but dataset {data.name} did not expose both modalities"
+        )
+
+    if mode == "text":
+        data.x = data.x_t.contiguous()
+        data.x_i = None
+    elif mode == "visual":
+        data.x = data.x_i.contiguous()
+        data.x_t = None
+    elif mode == "zero_text":
+        x_t = torch.zeros_like(data.x_t)
+        x_i = data.x_i.contiguous()
+        data.x_t = x_t
+        data.x_i = x_i
+        data.x = torch.cat([x_t, x_i], dim=1).contiguous()
+    elif mode == "zero_visual":
+        x_t = data.x_t.contiguous()
+        x_i = torch.zeros_like(data.x_i)
+        data.x_t = x_t
+        data.x_i = x_i
+        data.x = torch.cat([x_t, x_i], dim=1).contiguous()
+    else:
+        raise ValueError(
+            "dataset.feature_mode must be one of both/text/visual/zero_text/zero_visual, "
+            f"got {mode!r}"
+        )
+    data.info = {**data.info, "feature_mode": mode}
+    return data
+
+
 def _load_magb(cfg: DictConfig, task_name: str, seed: int) -> MAGData:
     ds = cfg.dataset
     edge_index_raw, labels, num_nodes = _load_dgl_graph(ds.graph_path)
@@ -247,7 +296,7 @@ def load_mag_data(cfg: DictConfig, task_name: str, seed: int) -> MAGData:
         raise ValueError(f"Dataset {cfg.dataset.name} supports tasks {tasks}, but got task={task_name}")
     source = str(cfg.dataset.source).lower()
     if source == "magb":
-        return _load_magb(cfg, task_name, seed)
+        return _apply_feature_mode(_load_magb(cfg, task_name, seed), cfg)
     if source == "mmgraph":
-        return _load_mmgraph(cfg, task_name)
+        return _apply_feature_mode(_load_mmgraph(cfg, task_name), cfg)
     raise ValueError(f"Unknown dataset source: {cfg.dataset.source}")

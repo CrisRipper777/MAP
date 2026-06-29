@@ -93,6 +93,7 @@ class MAPMAG(nn.Module):
         self.lambda_proto = float(cfg.model.get("lambda_proto", 0.01))
         self.lambda_gate = float(cfg.model.get("lambda_gate", 0.001))
         self.use_gate_loss = bool(cfg.model.get("use_gate_loss", True))
+        self.use_reliability = bool(cfg.model.get("use_reliability", True))
         self.reliability_min = float(cfg.model.get("reliability_min", 0.0))
         if not (0.0 <= self.reliability_min <= 1.0):
             raise ValueError(f"reliability_min must be in [0, 1], got {self.reliability_min}")
@@ -177,12 +178,16 @@ class MAPMAG(nn.Module):
         src, dst = edge_index
         return scatter(h[src], dst, dim=0, dim_size=h.size(0), reduce="mean")
 
-    def _degree_feature(self, edge_index: torch.Tensor, num_nodes: int, dtype: torch.dtype) -> torch.Tensor:
+    def _degree(self, edge_index: torch.Tensor, num_nodes: int, dtype: torch.dtype) -> torch.Tensor:
         if edge_index.numel() == 0:
             degree = torch.zeros(num_nodes, dtype=dtype, device=edge_index.device)
         else:
             ones = torch.ones(edge_index.size(1), dtype=dtype, device=edge_index.device)
             degree = scatter(ones, edge_index[1], dim=0, dim_size=num_nodes, reduce="sum")
+        return degree
+
+    def _degree_feature(self, edge_index: torch.Tensor, num_nodes: int, dtype: torch.dtype) -> torch.Tensor:
+        degree = self._degree(edge_index, num_nodes, dtype)
         return torch.log1p(degree).unsqueeze(-1)
 
     def _edge_cosine_mean(self, h: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
@@ -200,6 +205,8 @@ class MAPMAG(nn.Module):
         mean_h: torch.Tensor,
         mlp: nn.Module,
     ) -> torch.Tensor:
+        if not self.use_reliability:
+            return torch.ones((h.size(0), 1), dtype=h.dtype, device=h.device)
         rel_input = torch.cat([h, mean_h, h - mean_h, h * mean_h], dim=-1)
         gate = torch.sigmoid(mlp(rel_input))
         if self.reliability_min <= 0.0:
@@ -360,6 +367,66 @@ class MAPMAG(nn.Module):
             "gate_loss": gate_loss.detach(),
         }
         return z, None, None, aux_loss, aux_info
+
+    @torch.no_grad()
+    def node_aux_stats(
+        self,
+        x: torch.Tensor,
+        edge_index: torch.Tensor | None,
+        device: torch.device | None = None,
+    ) -> dict[str, torch.Tensor]:
+        """Return per-node MAP-MAG diagnostics for analysis exports."""
+        was_training = self.training
+        self.eval()
+        if device is None:
+            device = next(self.parameters()).device
+
+        x = x.to(device)
+        edge_index = self._edge_index_or_empty(edge_index, device)
+
+        x_t, x_v = self._split_features(x)
+        h_t = self.text_proj(x_t)
+        h_v = self.visual_proj(x_v)
+
+        mean_t = self._neighbor_mean(h_t, edge_index)
+        mean_v = self._neighbor_mean(h_v, edge_index)
+        r_t = self._reliability_gate(h_t, mean_t, self.text_reliability)
+        r_v = self._reliability_gate(h_v, mean_v, self.visual_reliability)
+        h_t_rel = r_t * h_t
+        h_v_rel = r_v * h_v
+
+        s_t = self._edge_cosine_mean(h_t, edge_index)
+        s_v = self._edge_cosine_mean(h_v, edge_index)
+        degree = self._degree(edge_index, int(x.size(0)), h_t.dtype)
+        log_degree = torch.log1p(degree).unsqueeze(-1)
+
+        lambda_denom = (r_t + r_v).clamp_min(self.eps)
+        h0 = (r_t / lambda_denom) * h_t_rel + (r_v / lambda_denom) * h_v_rel
+        gamma = self._frequency_gate(torch.cat([h0, s_t, s_v, log_degree], dim=-1))
+
+        router_input = torch.cat(
+            [h_t_rel, h_v_rel, torch.abs(h_t_rel - h_v_rel), h_t_rel * h_v_rel, s_t, s_v, log_degree],
+            dim=-1,
+        )
+        p = self._path_weights(self.router(router_input), self._active_path_mask(x.device, h_t.dtype))
+        text_visual_cosine = F.cosine_similarity(h_t, h_v, dim=-1, eps=self.eps)
+        text_visual_cosine = torch.nan_to_num(text_visual_cosine, nan=0.0, posinf=1.0, neginf=-1.0)
+
+        stats = {
+            "degree": degree.detach().cpu(),
+            "s_text": s_t.squeeze(-1).detach().cpu(),
+            "s_visual": s_v.squeeze(-1).detach().cpu(),
+            "r_text": r_t.squeeze(-1).detach().cpu(),
+            "r_visual": r_v.squeeze(-1).detach().cpu(),
+            "p_self": p[:, 0].detach().cpu(),
+            "p_struct": p[:, 1].detach().cpu(),
+            "p_proto": p[:, 2].detach().cpu(),
+            "gamma": gamma.squeeze(-1).detach().cpu(),
+            "text_visual_cosine": text_visual_cosine.detach().cpu(),
+        }
+        if was_training:
+            self.train()
+        return stats
 
     @torch.no_grad()
     def inference(

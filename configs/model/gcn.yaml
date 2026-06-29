@@ -1,6 +1,6 @@
 name: gcn
 hidden_dim: 256
-num_layers: 3
+num_layers: 2
 dropout: 0.2
 activation: relu
 norm: batchnorm

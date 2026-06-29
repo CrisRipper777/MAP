@@ -105,9 +105,16 @@ class MAPMAG(nn.Module):
         self.lambda_proto = float(cfg.model.get("lambda_proto", 0.01))
         self.lambda_gate = float(cfg.model.get("lambda_gate", 0.001))
         self.use_gate_loss = bool(cfg.model.get("use_gate_loss", True))
+        self.use_reliability = bool(cfg.model.get("use_reliability", True))
         self.reliability_min = float(cfg.model.get("reliability_min", 0.0))
         if not (0.0 <= self.reliability_min <= 1.0):
             raise ValueError(f"reliability_min must be in [0, 1], got {self.reliability_min}")
+        self.reliability_mode = str(cfg.model.get("reliability_mode", "double")).strip().lower()
+        if self.reliability_mode not in {"double", "single"}:
+            raise ValueError(
+                "model.reliability_mode must be one of {'double', 'single'}, "
+                f"got {self.reliability_mode!r}"
+            )
         self.router_temperature = float(cfg.model.get("router_temperature", 2.0))
         if self.router_temperature <= 0.0:
             raise ValueError(f"router_temperature must be positive, got {self.router_temperature}")
@@ -133,6 +140,12 @@ class MAPMAG(nn.Module):
         self.fixed_gamma = None if fixed_gamma is None else float(fixed_gamma)
         if self.fixed_gamma is not None and not (0.0 <= self.fixed_gamma <= 1.0):
             raise ValueError(f"fixed_gamma must be in [0, 1] or null, got {self.fixed_gamma}")
+        self.fusion_type = str(cfg.model.get("fusion_type", "weighted_sum")).strip().lower()
+        if self.fusion_type not in {"weighted_sum", "concat_mlp"}:
+            raise ValueError(
+                "model.fusion_type must be one of {'weighted_sum', 'concat_mlp'}, "
+                f"got {self.fusion_type!r}"
+            )
 
         self.text_proj = ProjectionMLP(self.text_dim, hidden_dim, dropout, norm)
         self.visual_proj = ProjectionMLP(self.visual_dim, hidden_dim, dropout, norm)
@@ -149,6 +162,10 @@ class MAPMAG(nn.Module):
         self.prototypes = nn.Parameter(torch.empty(self.num_prototypes, hidden_dim))
         nn.init.xavier_normal_(self.prototypes)
 
+        if self.fusion_type == "concat_mlp":
+            self.concat_fusion = _make_mlp(hidden_dim * 3 + 3, hidden_dim, hidden_dim, dropout, norm)
+        else:
+            self.concat_fusion = None
         self.output_mlp = _make_mlp(hidden_dim, hidden_dim, hidden_dim, dropout, norm)
         self.output_norm = nn.LayerNorm(hidden_dim)
         self.register_buffer("_current_epoch", torch.zeros((), dtype=torch.long), persistent=True)
@@ -189,12 +206,16 @@ class MAPMAG(nn.Module):
         src, dst = edge_index
         return scatter(h[src], dst, dim=0, dim_size=h.size(0), reduce="mean")
 
-    def _degree_feature(self, edge_index: torch.Tensor, num_nodes: int, dtype: torch.dtype) -> torch.Tensor:
+    def _degree(self, edge_index: torch.Tensor, num_nodes: int, dtype: torch.dtype) -> torch.Tensor:
         if edge_index.numel() == 0:
             degree = torch.zeros(num_nodes, dtype=dtype, device=edge_index.device)
         else:
             ones = torch.ones(edge_index.size(1), dtype=dtype, device=edge_index.device)
             degree = scatter(ones, edge_index[1], dim=0, dim_size=num_nodes, reduce="sum")
+        return degree
+
+    def _degree_feature(self, edge_index: torch.Tensor, num_nodes: int, dtype: torch.dtype) -> torch.Tensor:
+        degree = self._degree(edge_index, num_nodes, dtype)
         return torch.log1p(degree).unsqueeze(-1)
 
     def _edge_cosine_mean(self, h: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
@@ -212,11 +233,29 @@ class MAPMAG(nn.Module):
         mean_h: torch.Tensor,
         mlp: nn.Module,
     ) -> torch.Tensor:
+        if not self.use_reliability:
+            return torch.ones((h.size(0), 1), dtype=h.dtype, device=h.device)
         rel_input = torch.cat([h, mean_h, h - mean_h, h * mean_h], dim=-1)
         gate = torch.sigmoid(mlp(rel_input))
         if self.reliability_min <= 0.0:
             return gate
         return self.reliability_min + (1.0 - self.reliability_min) * gate
+
+    def _reliability_base(
+        self,
+        h_t: torch.Tensor,
+        h_v: torch.Tensor,
+        h_t_rel: torch.Tensor,
+        h_v_rel: torch.Tensor,
+        r_t: torch.Tensor,
+        r_v: torch.Tensor,
+    ) -> torch.Tensor:
+        lambda_denom = (r_t + r_v).clamp_min(self.eps)
+        lambda_t = r_t / lambda_denom
+        lambda_v = r_v / lambda_denom
+        if self.reliability_mode == "double":
+            return lambda_t * h_t_rel + lambda_v * h_v_rel
+        return lambda_t * h_t + lambda_v * h_v
 
     def _diffuse(self, h0: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
         if self.num_hops <= 0:
@@ -303,6 +342,22 @@ class MAPMAG(nn.Module):
         mean_p = p[:, active].mean(dim=0).clamp_min(self.eps)
         return torch.sum(mean_p * torch.log(mean_p * float(active_count)))
 
+    def _fuse_paths(
+        self,
+        z_self: torch.Tensor,
+        z_struct: torch.Tensor,
+        z_proto: torch.Tensor,
+        p: torch.Tensor,
+    ) -> torch.Tensor:
+        weighted_self = p[:, 0:1] * z_self
+        weighted_struct = p[:, 1:2] * z_struct
+        weighted_proto = p[:, 2:3] * z_proto
+        if self.fusion_type == "weighted_sum":
+            return weighted_self + weighted_struct + weighted_proto
+        if self.concat_fusion is None:
+            raise RuntimeError("concat_mlp fusion requested but concat_fusion module is missing")
+        return self.concat_fusion(torch.cat([weighted_self, weighted_struct, weighted_proto, p], dim=-1))
+
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor | None):
         edge_index = self._edge_index_or_empty(edge_index, x.device)
 
@@ -323,10 +378,7 @@ class MAPMAG(nn.Module):
 
         z_self = self.self_path(torch.cat([h_t_rel, h_v_rel], dim=-1))
 
-        lambda_denom = (r_t + r_v).clamp_min(self.eps)
-        lambda_t = r_t / lambda_denom
-        lambda_v = r_v / lambda_denom
-        h0 = lambda_t * h_t_rel + lambda_v * h_v_rel
+        h0 = self._reliability_base(h_t, h_v, h_t_rel, h_v_rel, r_t, r_v)
 
         z_low = self._diffuse(h0, edge_index)
         z_high = h0 - z_low
@@ -350,11 +402,7 @@ class MAPMAG(nn.Module):
         path_mask = self._active_path_mask(x.device, h_t.dtype)
         p = self._path_weights(router_logits, path_mask)
 
-        z = (
-            p[:, 0:1] * z_self
-            + p[:, 1:2] * z_struct
-            + p[:, 2:3] * z_proto
-        )
+        z = self._fuse_paths(z_self, z_struct, z_proto, p)
         z = self.output_norm(self.output_mlp(z) + z)
         z = torch.nan_to_num(z, nan=0.0, posinf=1e4, neginf=-1e4)
 
@@ -372,6 +420,65 @@ class MAPMAG(nn.Module):
             "gate_loss": gate_loss.detach(),
         }
         return z, None, None, aux_loss, aux_info
+
+    @torch.no_grad()
+    def node_aux_stats(
+        self,
+        x: torch.Tensor,
+        edge_index: torch.Tensor | None,
+        device: torch.device | None = None,
+    ) -> dict[str, torch.Tensor]:
+        """Return per-node MAP-MAG diagnostics for analysis exports."""
+        was_training = self.training
+        self.eval()
+        if device is None:
+            device = next(self.parameters()).device
+
+        x = x.to(device)
+        edge_index = self._edge_index_or_empty(edge_index, device)
+
+        x_t, x_v = self._split_features(x)
+        h_t = self.text_proj(x_t)
+        h_v = self.visual_proj(x_v)
+
+        mean_t = self._neighbor_mean(h_t, edge_index)
+        mean_v = self._neighbor_mean(h_v, edge_index)
+        r_t = self._reliability_gate(h_t, mean_t, self.text_reliability)
+        r_v = self._reliability_gate(h_v, mean_v, self.visual_reliability)
+        h_t_rel = r_t * h_t
+        h_v_rel = r_v * h_v
+
+        s_t = self._edge_cosine_mean(h_t, edge_index)
+        s_v = self._edge_cosine_mean(h_v, edge_index)
+        degree = self._degree(edge_index, int(x.size(0)), h_t.dtype)
+        log_degree = torch.log1p(degree).unsqueeze(-1)
+
+        h0 = self._reliability_base(h_t, h_v, h_t_rel, h_v_rel, r_t, r_v)
+        gamma = self._frequency_gate(torch.cat([h0, s_t, s_v, log_degree], dim=-1))
+
+        router_input = torch.cat(
+            [h_t_rel, h_v_rel, torch.abs(h_t_rel - h_v_rel), h_t_rel * h_v_rel, s_t, s_v, log_degree],
+            dim=-1,
+        )
+        p = self._path_weights(self.router(router_input), self._active_path_mask(x.device, h_t.dtype))
+        text_visual_cosine = F.cosine_similarity(h_t, h_v, dim=-1, eps=self.eps)
+        text_visual_cosine = torch.nan_to_num(text_visual_cosine, nan=0.0, posinf=1.0, neginf=-1.0)
+
+        stats = {
+            "degree": degree.detach().cpu(),
+            "s_text": s_t.squeeze(-1).detach().cpu(),
+            "s_visual": s_v.squeeze(-1).detach().cpu(),
+            "r_text": r_t.squeeze(-1).detach().cpu(),
+            "r_visual": r_v.squeeze(-1).detach().cpu(),
+            "p_self": p[:, 0].detach().cpu(),
+            "p_struct": p[:, 1].detach().cpu(),
+            "p_proto": p[:, 2].detach().cpu(),
+            "gamma": gamma.squeeze(-1).detach().cpu(),
+            "text_visual_cosine": text_visual_cosine.detach().cpu(),
+        }
+        if was_training:
+            self.train()
+        return stats
 
     @torch.no_grad()
     def inference(

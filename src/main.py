@@ -21,8 +21,10 @@ def _log_data_info(logger, data, model_name: str) -> None:
     logger.info("Dataset: %s | Source: %s | Task: %s", data.name, data.source, data.task)
     logger.info("Model: %s", model_name)
     logger.info("X: %s | dtype=%s", tuple(data.x.shape), data.x.dtype)
-    if data.x_i is not None:
-        logger.info("X_i: %s | X_t: %s", tuple(data.x_i.shape), tuple(data.x_t.shape))
+    if data.x_i is not None or data.x_t is not None:
+        x_i_shape = tuple(data.x_i.shape) if data.x_i is not None else None
+        x_t_shape = tuple(data.x_t.shape) if data.x_t is not None else None
+        logger.info("X_i: %s | X_t: %s", x_i_shape, x_t_shape)
     logger.info("Graph edge_index: %s | num_nodes=%d | num_edges=%d", tuple(data.edge_index.shape), data.num_nodes, data.num_edges)
     if data.y is not None:
         logger.info("Labels: shape=%s | num_classes=%s", tuple(data.y.shape), data.num_classes)
@@ -62,9 +64,9 @@ def main(cfg: DictConfig) -> None:
         logger.info("task.epochs <= 0, stopping after data loading/split preparation")
         results = {}
     elif str(cfg.task.name) == "nc":
-        results = run_nc(cfg, data, device, logger)
+        results = run_nc(cfg, data, device, logger, output_dir)
     elif str(cfg.task.name) == "lp":
-        results = run_lp(cfg, data, device, logger)
+        results = run_lp(cfg, data, device, logger, output_dir)
     else:
         raise ValueError(f"Unsupported task: {cfg.task.name}")
 

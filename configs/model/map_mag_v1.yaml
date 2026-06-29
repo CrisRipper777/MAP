@@ -13,7 +13,7 @@ dropout: 0.2
 norm: layernorm
 
 # Structure-aware diffusion path.
-num_hops: 2
+num_hops: 3
 # Keep NeighborLoader sampling depth aligned with MAP-MAG diffusion depth.
 num_layers: ${model.num_hops}
 restart: 0.15
@@ -24,7 +24,9 @@ num_prototypes: 16
 lambda_proto: 0.1
 
 # Router and reliability controls.
+use_reliability: true
 reliability_min: 0.1
+reliability_mode: double
 router_temperature: 3.0
 lambda_gate: 0.01
 use_gate_loss: true
@@ -36,6 +38,18 @@ gamma_max: 0.95
 gamma_temperature: 3.0
 gamma_warmup_epochs: 10
 fixed_gamma: null
+
+# Path fusion. weighted_sum is the frozen v1 default; concat_mlp is a light
+# ablation that learns interactions between weighted path embeddings.
+fusion_type: weighted_sum
+
+# Node-level analysis export. Writes best-val and final-epoch CSV files.
+export_node_aux: true
+
+# Optional prototype semantic analysis export. Disabled by default because it
+# adds extra best/final inference passes for classification diagnostics.
+export_prototype_aux: false
+prototype_export_topk: 3
 
 # Ablation switches.
 use_self_path: true

@@ -16,6 +16,7 @@ num_prototypes: 16
 lambda_proto: 0.1
 
 # Router balance regularization.
+use_reliability: true
 reliability_min: 0.1
 router_temperature: 3.0
 lambda_gate: 0.01
@@ -28,6 +29,9 @@ gamma_max: 0.95
 gamma_temperature: 3.0
 gamma_warmup_epochs: 10
 fixed_gamma: null
+
+# Node-level analysis export. Writes best-val and final-epoch CSV files.
+export_node_aux: true
 
 # Ablation switches.
 use_self_path: true

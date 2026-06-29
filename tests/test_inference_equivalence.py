@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import logging
+
 import torch
 import torch.nn as nn
 import pytest
 
-from src.data import MAGData
+from src.data import EdgeSplit, MAGData
 from src.models import dip, gcn, map_mag, map_mag_v1, mlp, mmgcn, sage
 from src.models.factory import build_model
+from src.tasks.analysis import export_node_aux_stats
 from src.tasks.inference import infer_all_embeddings, resolve_inference_mode
 
 
@@ -182,6 +185,153 @@ def test_map_mag_v1_can_be_built_by_factory() -> None:
 
     assert isinstance(model, map_mag_v1.MAPMAG)
     assert model.out_dim == 5
+
+
+def test_map_mag_v1_node_aux_stats_contains_required_values() -> None:
+    _, edge_index = _small_graph()
+    x = torch.arange(60, dtype=torch.float32).view(6, 10) / 10.0
+    cfg = _cfg()
+    cfg.model["hidden_dim"] = 5
+    cfg.model["num_prototypes"] = 4
+    cfg.model["num_hops"] = 2
+
+    torch.manual_seed(123)
+    model = map_mag_v1.Model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+    stats = model.node_aux_stats(x, edge_index, device=torch.device("cpu"))
+
+    required = {
+        "degree",
+        "s_text",
+        "s_visual",
+        "r_text",
+        "r_visual",
+        "p_self",
+        "p_struct",
+        "p_proto",
+        "gamma",
+        "text_visual_cosine",
+    }
+    assert required <= set(stats)
+    assert all(stats[key].shape == (6,) for key in required)
+    assert torch.isfinite(torch.stack([stats[key].float() for key in required])).all()
+    assert torch.allclose(stats["p_self"] + stats["p_struct"] + stats["p_proto"], torch.ones(6), atol=1e-6)
+
+
+def test_map_mag_v1_reliability_ablation_sets_gates_to_one() -> None:
+    _, edge_index = _small_graph()
+    x = torch.arange(60, dtype=torch.float32).view(6, 10) / 10.0
+    cfg = _cfg()
+    cfg.model["hidden_dim"] = 5
+    cfg.model["num_prototypes"] = 4
+    cfg.model["use_reliability"] = False
+
+    torch.manual_seed(123)
+    model = map_mag_v1.Model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+    stats = model.node_aux_stats(x, edge_index, device=torch.device("cpu"))
+
+    assert torch.allclose(stats["r_text"], torch.ones(6), atol=1e-6)
+    assert torch.allclose(stats["r_visual"], torch.ones(6), atol=1e-6)
+
+
+def test_map_mag_v1_node_aux_export_writes_nc_and_lp_csv(tmp_path) -> None:
+    _, edge_index = _small_graph()
+    x = torch.arange(60, dtype=torch.float32).view(6, 10) / 10.0
+    cfg = _CfgNode(
+        task=_CfgNode(),
+        model=_CfgNode(
+            hidden_dim=5,
+            num_layers=2,
+            dropout=0.0,
+            norm="batchnorm",
+            num_prototypes=4,
+            export_node_aux=True,
+        ),
+    )
+    torch.manual_seed(123)
+    model = map_mag_v1.Model(cfg, {"input_dim": 10, "num_nodes": 6, "text_dim": 4, "visual_dim": 6})
+    logger = logging.getLogger("test_map_mag_v1_node_aux_export")
+
+    nc_data = MAGData(
+        name="small",
+        source="test",
+        task="nc",
+        x=x,
+        edge_index=edge_index,
+        y=torch.tensor([0, 1, 0, 1, 0, 1]),
+        train_idx=torch.tensor([0, 1]),
+        val_idx=torch.tensor([2, 3]),
+        test_idx=torch.tensor([4, 5]),
+        num_nodes=6,
+        num_classes=2,
+    )
+    nc_path = export_node_aux_stats(
+        cfg=cfg,
+        model=model,
+        data=nc_data,
+        device=torch.device("cpu"),
+        output_dir=tmp_path,
+        run_id=0,
+        tag="best_val",
+        task_name="nc",
+        logger=logger,
+    )
+
+    assert nc_path is not None
+    nc_lines = nc_path.read_text(encoding="utf-8").splitlines()
+    assert nc_lines[0].split(",") == [
+        "node_id",
+        "label",
+        "split",
+        "degree",
+        "s_text",
+        "s_visual",
+        "r_text",
+        "r_visual",
+        "p_self",
+        "p_struct",
+        "p_proto",
+        "gamma",
+        "text_visual_cosine",
+    ]
+    assert len(nc_lines) == 7
+
+    edge_split = EdgeSplit(
+        train={"source_node": torch.tensor([0, 1]), "target_node": torch.tensor([1, 2])},
+        valid={
+            "source_node": torch.tensor([2]),
+            "target_node": torch.tensor([3]),
+            "target_node_neg": torch.tensor([[0, 4]]),
+        },
+        test={
+            "source_node": torch.tensor([4]),
+            "target_node": torch.tensor([5]),
+            "target_node_neg": torch.tensor([[1, 3]]),
+        },
+    )
+    lp_data = MAGData(
+        name="small",
+        source="test",
+        task="lp",
+        x=x,
+        edge_index=edge_index,
+        edge_split=edge_split,
+        num_nodes=6,
+    )
+    lp_path = export_node_aux_stats(
+        cfg=cfg,
+        model=model,
+        data=lp_data,
+        device=torch.device("cpu"),
+        output_dir=tmp_path,
+        run_id=0,
+        tag="final_epoch",
+        task_name="lp",
+        logger=logger,
+    )
+
+    assert lp_path is not None
+    lp_header = lp_path.read_text(encoding="utf-8").splitlines()[0].split(",")
+    assert lp_header[:6] == ["node_id", "label", "split", "degree", "node_degree", "train_edge_degree"]
 
 
 def test_map_mag_layerwise_inference_matches_full_batch_forward() -> None:
