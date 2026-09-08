@@ -1,0 +1,4 @@
+variant,seed,best_val_acc,val_macro_f1,best_epoch,early_stop_epoch,params,resolved_config_path,output_dir
+map_v2_core,42,0.573185384273529,0.4973,84,114,1226652,outputs/ored/o0/map_v2_core_movies_seed42/.hydra/config.yaml,outputs/ored/o0/map_v2_core_movies_seed42
+lowpass_uniform,42,0.5806838870048523,0.4986,71,101,1226652,outputs/ored/o0/lowpass_uniform_movies_seed42/.hydra/config.yaml,outputs/ored/o0/lowpass_uniform_movies_seed42
+semantic_uniform,42,0.5767846703529358,0.5008,84,114,1226652,outputs/ored/o0/semantic_uniform_movies_seed42/.hydra/config.yaml,outputs/ored/o0/semantic_uniform_movies_seed42

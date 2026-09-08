@@ -1,0 +1,43 @@
+{
+  "stage": "ORED-0",
+  "protocol": "unified_full_graph_nc_v1",
+  "dataset": "Movies",
+  "seed": 42,
+  "num_runs": 1,
+  "metric_scale": "fraction in [0, 1]; val_macro_f1 is read from the best-validation checkpoint log",
+  "references": [
+    {
+      "variant": "map_v2_core",
+      "seed": 42,
+      "best_val_acc": 0.573185384273529,
+      "val_macro_f1": 0.4973,
+      "best_epoch": 84,
+      "early_stop_epoch": 114,
+      "params": 1226652,
+      "resolved_config_path": "outputs/ored/o0/map_v2_core_movies_seed42/.hydra/config.yaml",
+      "output_dir": "outputs/ored/o0/map_v2_core_movies_seed42"
+    },
+    {
+      "variant": "lowpass_uniform",
+      "seed": 42,
+      "best_val_acc": 0.5806838870048523,
+      "val_macro_f1": 0.4986,
+      "best_epoch": 71,
+      "early_stop_epoch": 101,
+      "params": 1226652,
+      "resolved_config_path": "outputs/ored/o0/lowpass_uniform_movies_seed42/.hydra/config.yaml",
+      "output_dir": "outputs/ored/o0/lowpass_uniform_movies_seed42"
+    },
+    {
+      "variant": "semantic_uniform",
+      "seed": 42,
+      "best_val_acc": 0.5767846703529358,
+      "val_macro_f1": 0.5008,
+      "best_epoch": 84,
+      "early_stop_epoch": 114,
+      "params": 1226652,
+      "resolved_config_path": "outputs/ored/o0/semantic_uniform_movies_seed42/.hydra/config.yaml",
+      "output_dir": "outputs/ored/o0/semantic_uniform_movies_seed42"
+    }
+  ]
+}
