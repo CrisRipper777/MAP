@@ -1,5 +1,16 @@
-outputs/*
+# outputs
+outputs/**
+!outputs/
 !outputs/.gitkeep
+
+# Python cache
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# checkpoints / large model files
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors

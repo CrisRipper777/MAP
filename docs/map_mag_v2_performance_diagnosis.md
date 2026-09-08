@@ -60,9 +60,154 @@
 
 ---
 
-## 4. 全部变体的下游结果
+## 4. 实验设计与各变体的含义
 
-### 4.1 Test Accuracy（%）
+### 4.1 总体设计思路
+
+这组实验不是把 13 个名称相近的模型简单横向排名，而是围绕默认 v2 建立三层受控分解：
+
+1. **核心机制分解（前 5 个变体）**：回答图传播、reliability fusion、semantic edge 各自贡献多少，以及两种 gate 是否有交互。
+2. **同一机制内部替换（4 个变体）**：回答 double reliability 是否必要，以及语义边权究竟应由文本、视觉还是 reliability-aware 相似度控制。
+3. **附加路径诊断（4 个变体）**：回答 high-pass、自属性和 prototype 是否应重新放回低通主干。
+
+“运行全部变体”包含前 5 个核心实验，并在其基础上增加 8 个机制细化实验；不是另一套重复实验。
+
+每一个变体都继续使用同一个 `MAPMAGV2` 类、相同 NC trainer、数据划分、hidden dimension、优化器、训练轮数上限、early stopping、输出 head 和 checkpoint 选择规则。实验只通过 Hydra override 改变目标计算路径。这种设计尽量让性能差异来自机制本身，而不是训练协议或 head 容量。
+
+### 4.2 默认 core 的完整计算链
+
+先把输入拆成文本和视觉特征并分别投影：
+
+```text
+h_t = TextProj(x_t)
+h_v = VisualProj(x_v)
+```
+
+对每个节点计算本模态表示与一阶邻居均值的组合，得到可靠性：
+
+```text
+r_t = 0.1 + 0.9 * sigmoid(RelMLP_t([h_t, mean_t, h_t-mean_t, h_t*mean_t]))
+r_v = 0.1 + 0.9 * sigmoid(RelMLP_v([h_v, mean_v, h_v-mean_v, h_v*mean_v]))
+lambda_t = r_t / (r_t + r_v)
+lambda_v = r_v / (r_t + r_v)
+h0 = lambda_t*h_t + lambda_v*h_v                 # single reliability
+```
+
+在原始拓扑的每条边上计算投影后模态 cosine，默认取均值生成共享语义边权：
+
+```text
+sim_ij = (cos(h_ti,h_tj) + cos(h_vi,h_vj)) / 2
+w_ij = 0.1 + 0.9 * sigmoid(sim_ij / 2.0)
+```
+
+然后用带自环、GCN normalization 和 restart 的两跳传播：
+
+```text
+H(0) = h0
+H(k+1) = 0.85 * A_sem_norm * H(k) + 0.15 * h0,  k=0,1
+z_low = H(2)
+```
+
+默认 core 不启用 high-pass/self/prototype，最后输出：
+
+```text
+z_final = LayerNorm(OutputMLP(z_low) + z_low)
+```
+
+所以默认 core 可以拆成五个功能块：双模态投影、reliability fusion、semantic edge、restart low-pass、输出残差整形。此次 13 个变体主要拆开了中间三个模块和可选路径；投影与输出整形在所有变体中保持不变。
+
+### 4.3 五个核心实验：一个带交互项的阶梯/因子设计
+
+| 变体 | Reliability | 图传播 | 边权 | 实际计算含义 | 主要回答的问题 |
+|---|---|---|---|---|---|
+| `core_no_graph` | 关闭，`lambda_t=lambda_v=0.5` | 关闭，`num_hops=0` | 关闭 | 双投影均匀融合后，直接进入输出残差 MLP | v2 脚手架内不使用图时能达到多少；它是 attribute-only 参照 |
+| `lowpass_uniform` | 关闭，均匀融合 | 两跳 restart low-pass | 全部为 1 | 在未经语义重加权的原始图上传播 | 相对 `core_no_graph` 严格隔离 low-pass bundle 的贡献 |
+| `reliability_uniform` | single | 两跳 restart low-pass | 全部为 1 | reliability 融合后在原始图传播 | 相对 `lowpass_uniform` 隔离 reliability 的独立作用 |
+| `semantic_uniform` | 关闭，均匀融合 | 两跳 restart low-pass | 默认 `avg_cos` | 均匀模态融合，但用语义边权传播 | 相对 `lowpass_uniform` 隔离 semantic edge 的独立作用 |
+| `core` | single | 两跳 restart low-pass | 默认 `avg_cos` | 默认完整 v2 core | 检验 reliability 与 semantic edge 同时存在后的总效果和交互 |
+
+这里的 **uniform graph** 不是完整图、随机图或把拓扑打乱，而是保留原始 `edge_index`，仅令所有原始边 `w_ij=1`。因此 `lowpass_uniform` 测到的是“原始拓扑传播”的价值。
+
+五个核心实验应按下面的成对关系解释：
+
+```text
+core_no_graph ──(+ low-pass)──────────────> lowpass_uniform
+                                               │
+                         + reliability         │ + semantic edge
+                                               │
+                     reliability_uniform   semantic_uniform
+                               └──────── core ────────┘
+```
+
+- `lowpass_uniform - core_no_graph`：low-pass 图传播的净增益。
+- `reliability_uniform - lowpass_uniform`：在 uniform graph 条件下 reliability 的净增益。
+- `semantic_uniform - lowpass_uniform`：在 uniform fusion 条件下 semantic edge 的净增益。
+- `core - semantic_uniform`：已有 semantic edge 时，再加 reliability 的条件增益。
+- `core - reliability_uniform`：已有 reliability 时，再加 semantic edge 的条件增益。
+- `core - reliability_uniform - semantic_uniform + lowpass_uniform`：两种机制的交互项。宏平均交互约为 **-0.07 Acc / -0.33 F1**，表明二者的信息存在一定重叠或优化干扰。
+
+不能只做 `core - core_no_graph` 就宣称差值来自某一个模块，因为这个差值同时包含图传播、reliability 和 semantic edge。
+
+### 4.4 reliability 与边权内部替换实验
+
+| 变体 | 相对 core 的唯一主要改变 | 具体公式/含义 | 应与谁比较 | 诊断目标 |
+|---|---|---|---|---|
+| `double_reliability` | `reliability_mode=double` | `h0=lambda_t*(r_t*h_t)+lambda_v*(r_v*h_v)` | `core` | v1 风格的第二次可靠性缩放是否有益 |
+| `edge_text_only` | `edge_weight_mode=text_only` | `sim_ij=cos_t_ij` | `core` | 边筛选信号是否主要来自文本 |
+| `edge_visual_only` | `edge_weight_mode=visual_only` | `sim_ij=cos_v_ij` | `core` | 边筛选信号是否主要来自视觉 |
+| `edge_reliability_aware` | `edge_weight_mode=reliability_aware` | 用边两端的 `r_t/r_v` 加权 `cos_t/cos_v` | `core` | 节点可靠性是否也应参与边权构造 |
+
+三个 edge 变体都保留 single reliability、两跳 low-pass 和其余 core 设置，只替换 `sim_ij` 的来源。因此它们回答的是**边权内部哪种相似度更好**，不能用于判断“要不要图传播”；是否需要 semantic edge 应看 `semantic_uniform - lowpass_uniform` 或 `core - reliability_uniform`。
+
+`double_reliability` 也不是“两个 reliability 网络”：它仍是文本/视觉各一个 gate，区别只是可靠性既决定 `lambda`，又再次乘到特征幅值上。
+
+### 4.5 附加结构路径实验
+
+| 变体 | 相对 core 的改变 | 计算形式 | 控制细节 | 诊断目标 |
+|---|---|---|---|---|
+| `lowpass_residual` | 加有界 high-pass correction | `z=z_low+eta*MLP(h0-z_low)` | `0≤eta≤0.2` | 纯低通是否丢失了需要的小幅高频信息 |
+| `original_v1_gamma` | 换成 v1 风格 low/high 竞争 | `z=gamma*z_low+(1-gamma)*(h0-z_low)` | `0.05≤gamma≤0.95` | v1 对称频率混合是否优于 v2 纯低通；仅作退化诊断 |
+| `self_residual` | 增加未传播属性路径 | `z_input=z_low+alpha_self*SelfMLP([h_t,h_v])` | `0≤alpha_self≤0.2` | 图传播后是否还需显式保留节点自身属性 |
+| `prototype_residual` | 增加共享原型残差 | `z=z_low+0.2*z_proto` | 16 个 prototype，`lambda_proto=0` | 共享全局语义原型是否补充局部图信息 |
+
+四个实验都直接与 `core` 比较，但它们不是一个逐步累加链：每次只打开一种可选路径，避免把多个增强项的交互混进结果。
+
+`prototype_residual` 特意保持 `lambda_proto=0`，即不增加 prototype diversity loss。这样测的是前向原型路径本身，而不是“路径 + 新辅助损失”的混合效果。
+
+### 4.6 训练与统计控制
+
+- 每个 dataset/variant 在一个 job 中连续运行 3 次，实际 seed 为 42、43、44。
+- 每次都完整重新初始化并训练模型；不存在用 core checkpoint 直接测试某个消融作为主结果的情况。
+- 训练只使用 train split，early stopping 和最佳 checkpoint 选择只看 validation accuracy；test 只在最终评估/诊断时读取。
+- 所有变体使用相同 `hidden_dim=256`、dropout、LayerNorm、AdamW、学习率、weight decay、梯度裁剪、最多 300 epochs、patience 30。
+- 所有 NC 实验使用 full-graph forward，避免不同变体因邻居采样随机性或采样覆盖范围不同而产生额外混杂。
+- 对比以相同 dataset/seed 成对计算，再对数据集取等权宏平均；不能把 15 个结果简单当作独立同分布样本做过强显著性结论。
+- 单卡两个 job 并行只改变墙钟时间和显存占用，不改变随机种子、计算图或实验定义；ele-fashion 独占 GPU 是调度约束，不是另一种训练设置。
+
+当前类会实例化大部分可选模块，即使某条路径关闭，对应参数也可能仍出现在参数统计中，但不会获得该路径的梯度。因此大多数变体参数统计相同，有利于控制“参数规模”混杂；它不代表关闭模块后的部署计算量不能进一步降低。
+
+### 4.7 诊断实验是怎么设计的
+
+训练后的诊断分成六组，每组回答不同问题：
+
+| 诊断 | 计算对象 | 指标/导出 | 回答的问题 |
+|---|---|---|---|
+| 原始数据审计 | 未训练的 `x_t/x_v` 和原图 | 节点/边/度、homophily、同异类 cosine gap、边 AUC | 数据集在训练前具有什么结构和模态先验 |
+| 下游与泛化 | 每个最佳 checkpoint | train/val/test Acc、Macro-F1、train-test gap | 增益是否出现在 test，是否伴随过拟合变化 |
+| 表示链路 | `h_t,h_v,h0,z_low,z_struct,z_final` | 同设置后验线性探针 | 类别可分性在哪一步产生或损失 |
+| 图与边权 | 每条原始边和传播前后表示 | 边权均值/CV/AUC、加权同配率、有害消息质量、Dirichlet energy、有效秩 | semantic edge 是否真的改变消息分配，low-pass 是否真的改变表示 |
+| 节点分层 | 每个节点 | degree、正确性、`r/lambda`、局部相似度、表示变化 | 收益集中在哪类节点，gate 是否按节点自适应 |
+| 冻结反事实 | 固定已训练参数，仅改推理计算 | no-graph、uniform/shuffle/invert/text/visual edge、uniform fusion | 已训练模型对某机制有多强依赖，以及是否存在共适应 |
+
+反事实结果必须和重训练消融联合解释。例如 core 在推理时突然换成 uniform fusion 会掉点，不代表 uniform fusion 从头训练也差；投影层与 head 已经适应了原来的 gate。本文所有“模块带来多少净增益”的结论都优先采用重训练结果。
+
+诊断中的边 AUC、homophily 和正确性分层使用标签，但只在 checkpoint 训练完成后离线计算；它们不进入前向、loss 或 early stopping，因此没有标签泄漏。
+
+---
+
+## 5. 全部变体的下游结果
+
+### 5.1 Test Accuracy（%）
 
 | 变体 | Movies | Toys | Grocery | ele-fashion | Reddit-S | 宏平均 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -82,7 +227,7 @@
 
 粗体表示同一数据集中的最好值或并列近似最好值；它仅用于定位，不代表显著性。
 
-### 4.2 Test Macro-F1（%）
+### 5.2 Test Macro-F1（%）
 
 | 变体 | Movies | Toys | Grocery | ele-fashion | Reddit-S | 宏平均 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -102,7 +247,7 @@
 
 ---
 
-## 5. 重训练消融：每个机制到底贡献多少
+## 6. 重训练消融：每个机制到底贡献多少
 
 下表是相同 dataset/seed 的成对差值。单元格为 `ΔAcc/ΔF1`；最后一列的胜场是 15 个 dataset-seed 配对中差值大于 0 的次数。
 
@@ -122,7 +267,7 @@
 | self residual - core | -0.51/-1.18 | -0.27/-0.14 | -0.17/-0.11 | +0.37/+0.36 | +0.42/+0.82 | -0.03/-0.05 | 9/15，8/15 |
 | prototype residual - core | +0.00/+0.62 | -0.17/-0.23 | -0.32/+0.53 | -0.14/+0.20 | -0.02/+0.31 | -0.13/+0.29 | 4/15，8/15 |
 
-### 5.1 最小充分结构
+### 6.1 最小充分结构
 
 三个关键模型的宏平均是：
 
@@ -138,9 +283,9 @@
 
 ---
 
-## 6. 为什么 low-pass 主干有效
+## 7. 为什么 low-pass 主干有效
 
-### 6.1 冻结 core 去图会大幅掉点
+### 7.1 冻结 core 去图会大幅掉点
 
 对训练完成的 core 临时改为 `no_graph`，性能平均下降 **5.45 Acc / 5.46 F1**；这比重训练的 low-pass 增益更大，因为模型训练期间已经与图传播共适应。
 
@@ -154,7 +299,7 @@
 
 解释：模型强依赖“是否传播”，却对“当前这组细微边权如何排列”不敏感。这与重训练消融完全一致：主要价值来自拓扑上的浅层消息传递，而非精细边权。
 
-### 6.2 不同节点度数上的增益
+### 7.2 不同节点度数上的增益
 
 以下为 `core - core_no_graph` 的 test accuracy 差值。括号内为该分箱 test 节点数；节点数在 3 个 run 间相同。
 
@@ -172,7 +317,7 @@
 - ele-fashion 在所有度数区间都退化，所以其问题不能仅归因于低度节点；即使高阶节点也没有从当前传播规则受益。
 - Movies 的最大收益在 8–15 度，Reddit-S 的最大收益反而在低度区间。单一“度越高越该传播”的规则不成立。
 
-### 6.3 表示变化
+### 7.3 表示变化
 
 core 中 `z_low` 相对 `h0` 的平均相对变化为 0.287–0.445；有效秩降至 `h0` 的 49%–62%。这说明两跳传播确实完成了明显的低通/压缩，而不是近似恒等映射。
 
@@ -186,7 +331,7 @@ core 中 `z_low` 相对 `h0` 的平均相对变化为 0.287–0.445；有效秩�
 
 低秩化本身不是目的：ele-fashion 同样发生低秩化，却没有性能收益。有效的是“标签一致邻域带来的有用压缩”，而非越平滑越好。
 
-### 6.4 low-pass 同时具有明显的正则化效应
+### 7.4 low-pass 同时具有明显的正则化效应
 
 在各模型自己的最佳 validation checkpoint 上，五数据集平均的 `train Acc - test Acc` 为：
 
@@ -200,7 +345,7 @@ low-pass 将平均训练—测试间隙缩小约 4.65 个百分点；Toys/Grocer
 
 ---
 
-## 7. 输出 MLP/残差归一化承担了很强的判别整形作用
+## 8. 输出 MLP/残差归一化承担了很强的判别整形作用
 
 对 core 各阶段做相同设置的后验线性探针，结果如下（`Acc/F1`）：
 
@@ -221,9 +366,9 @@ low-pass 将平均训练—测试间隙缩小约 4.65 个百分点；Toys/Grocer
 
 ---
 
-## 8. reliability fusion：学到了偏好，但没有增加独立性能
+## 9. reliability fusion：学到了偏好，但没有增加独立性能
 
-### 8.1 学到的模态方向基本合理
+### 9.1 学到的模态方向基本合理
 
 | 数据集 | 平均 `lambda_text` | 节点内 SD | P10–P90 | 跨 seed 节点排序相关 | 重训练 reliability 增益 | core 冻结改均匀融合 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -243,7 +388,7 @@ Toys/Grocery/Reddit-S 偏视觉，ele-fashion 偏文本，与单模态线性探�
 
 冻结 core 后突然改成均匀融合会掉点，尤其 Movies，但这只说明投影层、输出层和 head 已与 gate 共适应。均匀融合从头训练仍可达到相同甚至更好的性能，因此不能把冻结掉点解释成 gate 的独立贡献。
 
-### 8.2 为什么 double reliability 会伤害
+### 9.2 为什么 double reliability 会伤害
 
 single 模式为：
 
@@ -262,7 +407,7 @@ h0 = lambda_t * (r_t * h_t) + lambda_v * (r_v * h_v)
 
 ---
 
-## 9. semantic edge：判别排序很好，但实际权重过平
+## 10. semantic edge：判别排序很好，但实际权重过平
 
 | 数据集 | 原图同配率 | 投影文本 AUC | 投影视觉 AUC | 最终边权 AUC | 边权 CV | 加权同配率提升 | 有害消息质量变化 |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -290,16 +435,16 @@ w = 0.1 + 0.9 * sigmoid(sim / 2.0)
 
 ---
 
-## 10. 额外结构路径为什么没有形成通用增益
+## 11. 额外结构路径为什么没有形成通用增益
 
-### 10.1 性能模式
+### 11.1 性能模式
 
 - `lowpass_residual`：平均 -0.54 Acc / -0.92 F1；Movies 最差（-1.93/-3.35），ele-fashion 和 Reddit-S 小幅受益。
 - `original_v1_gamma`：平均 -0.17/-0.09；ele-fashion +0.71/+0.90，Reddit-S +0.36/+0.74，但 Movies/Toys/Grocery 的 Acc 均下降。
 - `self_residual`：平均基本持平；ele-fashion +0.37/+0.36，Reddit-S +0.42/+0.82，另外三个数据集下降。
 - `prototype_residual`：平均 -0.13/+0.29，没有任何数据集 Acc 稳定提高。
 
-### 10.2 门控与实际修正幅度
+### 11.2 门控与实际修正幅度
 
 | 机制 | 门值范围（五数据集均值） | 门的节点内 SD 范围 | 修正范数 / `z_low` 范围 | 诊断 |
 |---|---:|---:|---:|---|
@@ -314,7 +459,7 @@ w = 0.1 + 0.9 * sigmoid(sim / 2.0)
 
 ---
 
-## 11. 分数据集诊断
+## 12. 分数据集诊断
 
 ### Movies
 
@@ -351,30 +496,30 @@ w = 0.1 + 0.9 * sigmoid(sim / 2.0)
 
 ---
 
-## 12. 对后续模型设计最有价值的经验
+## 13. 对后续模型设计最有价值的经验
 
-### 12.1 应保留
+### 13.1 应保留
 
 1. **浅层 restart low-pass 作为默认结构主干。** 这是唯一跨数据集大幅、稳定、被严格对照确认的模块。
 2. **single 而不是 double reliability。** 如果保留 reliability，只让它决定比例，不要再次缩放模态特征。
 3. **投影后的输出残差 MLP + LayerNorm。** 表示探针显示输出阶段承担强判别整形；在进一步拆分实验前不应删除。
 4. **全图一致训练/评估、相同 checkpoint 规则与成对 seed。** 这些工程设计让图传播不受采样邻域变化干扰，并使机制差值可解释。其性能贡献尚未独立消融，但实验稳定性价值明确。
 
-### 12.2 可以简化或默认关闭
+### 13.2 可以简化或默认关闭
 
 1. reliability gate：当前不是独立增益来源。可先替换为均匀融合或更廉价的全局可学习标量。
 2. prototype residual：实际幅度不足 1%，继续默认关闭。
 3. lowpass residual/self residual/v1 gamma：不要作为所有数据集默认开启项，只能作为条件模块。
 4. 多种 edge mode：当前差异太小，不值得增加选择复杂度；`avg_cos` 或 uniform 都足够作为基线。
 
-### 12.3 值得重新设计，而不是简单删除
+### 13.3 值得重新设计，而不是简单删除
 
 1. **semantic edge 的映射强度。** 保留 cosine 排序信号，但重新设计权重动态范围；把 edge CV、加权同配率提升和冻结 shuffle/invert 敏感性作为联合诊断指标。
 2. **传播 bypass。** 学习 `z = beta*z_low + (1-beta)*h0` 时应零初始化或从低通端初始化，并防止 gate 贴边；输入可包含度、邻域一致性、模态冲突和局部结构不确定性。
 3. **reliability 的训练目标。** 如果想让它真表示可靠性，需要模态 dropout/corruption、缺失模态或独立校准约束；仅靠最终分类损失，投影层与 gate 存在严重可替代性。
 4. **数据集/节点条件化而非全局固定增强。** ele-fashion 和 Reddit-S 说明额外自信息有时有用，但最优强度不同；当前门饱和导致其近似固定系数。
 
-### 12.4 下一轮最优先的最小实验
+### 13.4 下一轮最优先的最小实验
 
 当前实验仍把“low-pass bundle”和“输出整形 bundle”视为整体。若目标是继续深挖性能来源，优先级应是：
 
@@ -390,7 +535,7 @@ w = 0.1 + 0.9 * sigmoid(sim / 2.0)
 
 ---
 
-## 13. 工程与诊断注意事项
+## 14. 工程与诊断注意事项
 
 1. 除 prototype 外，当前所有变体报告的参数量都为 1,226,652，因为模型即使关闭模块也仍实例化对应参数；prototype 为 1,230,748。这个设计很好地控制了消融中的容量差异，但参数量不代表部署时的真实活动计算量。若最终简化模型，应再做物理删模块后的速度/显存测试。
 2. 当前以 validation accuracy 选 checkpoint，而本文同时关心 Macro-F1。Movies 等类别不平衡数据上的 F1 波动明显；如果后续目标是最大化 F1，需要单独比较 val-Acc 与 val-F1 checkpoint selection，不能把选择规则效应误认为架构效应。
@@ -402,7 +547,7 @@ w = 0.1 + 0.9 * sigmoid(sim / 2.0)
 
 ---
 
-## 14. 最终判断
+## 15. 最终判断
 
 如果现在要基于这些结果设计下一版模型，最合理的出发点不是继续保留 v2 的所有组件，而是：
 
