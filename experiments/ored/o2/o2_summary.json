@@ -1,0 +1,233 @@
+{
+  "stage": "ORED-2",
+  "protocol": "unified_full_graph_nc_v1",
+  "datasets": [
+    "Movies",
+    "Toys",
+    "Grocery"
+  ],
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "variants": [
+    "p0",
+    "p0_refine",
+    "joint_rd",
+    "ownership_rd"
+  ],
+  "run_count": 36,
+  "uses_test_labels_or_metrics": false,
+  "p0_movies_summary": {
+    "dataset": "Movies",
+    "variant": "p0",
+    "seeds": 3,
+    "mean_val_acc_pct": 52.22955346107483,
+    "std_val_acc_pct": 0.37408923639184255,
+    "mean_val_macro_f1_pct": 38.45554727899573,
+    "std_val_macro_f1_pct": 1.335389299435626,
+    "model_params": 1037568,
+    "head_params": 5140,
+    "total_params": 1042708
+  },
+  "contrasts": {
+    "A_refinement_gain": {
+      "left_variant": "p0_refine",
+      "right_variant": "p0",
+      "per_dataset": {
+        "Movies": {
+          "mean_delta_acc_pp": -0.17996430397033691,
+          "std_delta_acc_pp": 0.12245101018382618,
+          "positive_acc_seeds": 0,
+          "mean_delta_macro_f1_pp": 0.3573973743911995,
+          "std_delta_macro_f1_pp": 1.7831473490615999,
+          "positive_macro_f1_seeds": 2
+        },
+        "Toys": {
+          "mean_delta_acc_pp": 0.1932819684346517,
+          "std_delta_acc_pp": 0.29458432655524114,
+          "positive_acc_seeds": 2,
+          "mean_delta_macro_f1_pp": 0.03292384600572795,
+          "std_delta_macro_f1_pp": 0.526848105153033,
+          "positive_macro_f1_seeds": 2
+        },
+        "Grocery": {
+          "mean_delta_acc_pp": -0.8491933345794678,
+          "std_delta_acc_pp": 0.1867353725597212,
+          "positive_acc_seeds": 0,
+          "mean_delta_macro_f1_pp": -2.1295944300901497,
+          "std_delta_macro_f1_pp": 0.5223498353870212,
+          "positive_macro_f1_seeds": 0
+        }
+      },
+      "macro_mean_delta_acc_pp": -0.27862522337171763,
+      "macro_mean_delta_macro_f1_pp": -0.5797577365644074,
+      "paired_delta_mean_acc_pp": -0.2786252233717177,
+      "paired_delta_std_acc_pp": 0.4811869418202386,
+      "paired_delta_mean_macro_f1_pp": -0.5797577365644075,
+      "paired_delta_std_macro_f1_pp": 1.5690405715072369
+    },
+    "B_joint_graph_gain": {
+      "left_variant": "joint_rd",
+      "right_variant": "p0_refine",
+      "per_dataset": {
+        "Movies": {
+          "mean_delta_acc_pp": 4.7890424728393555,
+          "std_delta_acc_pp": 0.48631677930541656,
+          "positive_acc_seeds": 3,
+          "mean_delta_macro_f1_pp": 9.289028096731581,
+          "std_delta_macro_f1_pp": 3.4128392323506667,
+          "positive_macro_f1_seeds": 3
+        },
+        "Toys": {
+          "mean_delta_acc_pp": 5.870982011159261,
+          "std_delta_acc_pp": 0.08598815545187358,
+          "positive_acc_seeds": 3,
+          "mean_delta_macro_f1_pp": 6.391646099739607,
+          "std_delta_macro_f1_pp": 0.4330543785160809,
+          "positive_macro_f1_seeds": 3
+        },
+        "Grocery": {
+          "mean_delta_acc_pp": 5.3099095821380615,
+          "std_delta_acc_pp": 0.16793157289520966,
+          "positive_acc_seeds": 3,
+          "mean_delta_macro_f1_pp": 7.657035598949872,
+          "std_delta_macro_f1_pp": 1.0056113449110917,
+          "positive_macro_f1_seeds": 3
+        }
+      },
+      "macro_mean_delta_acc_pp": 5.323311355378892,
+      "macro_mean_delta_macro_f1_pp": 7.7792365984736875,
+      "paired_delta_mean_acc_pp": 5.323311355378893,
+      "paired_delta_std_acc_pp": 0.5346852592775215,
+      "paired_delta_mean_macro_f1_pp": 7.7792365984736875,
+      "paired_delta_std_macro_f1_pp": 2.385097673912696
+    },
+    "C_ownership_graph_gain": {
+      "left_variant": "ownership_rd",
+      "right_variant": "p0_refine",
+      "per_dataset": {
+        "Movies": {
+          "mean_delta_acc_pp": 5.138971408208211,
+          "std_delta_acc_pp": 0.4583825033263387,
+          "positive_acc_seeds": 3,
+          "mean_delta_macro_f1_pp": 11.387769986238247,
+          "std_delta_macro_f1_pp": 2.440736370640611,
+          "positive_macro_f1_seeds": 3
+        },
+        "Toys": {
+          "mean_delta_acc_pp": 5.822660525639852,
+          "std_delta_acc_pp": 0.2002059696943794,
+          "positive_acc_seeds": 3,
+          "mean_delta_macro_f1_pp": 6.7722268265252845,
+          "std_delta_macro_f1_pp": 0.47626137225200904,
+          "positive_macro_f1_seeds": 3
+        },
+        "Grocery": {
+          "mean_delta_acc_pp": 5.202537775039673,
+          "std_delta_acc_pp": 0.11794009011773504,
+          "positive_acc_seeds": 3,
+          "mean_delta_macro_f1_pp": 6.51058595693786,
+          "std_delta_macro_f1_pp": 0.04341725441164868,
+          "positive_macro_f1_seeds": 3
+        }
+      },
+      "macro_mean_delta_acc_pp": 5.388056569629245,
+      "macro_mean_delta_macro_f1_pp": 8.223527589900463,
+      "paired_delta_mean_acc_pp": 5.388056569629246,
+      "paired_delta_std_acc_pp": 0.4279595206247693,
+      "paired_delta_mean_macro_f1_pp": 8.223527589900463,
+      "paired_delta_std_macro_f1_pp": 2.6607503246352247
+    },
+    "D_ownership_minus_joint": {
+      "left_variant": "ownership_rd",
+      "right_variant": "joint_rd",
+      "per_dataset": {
+        "Movies": {
+          "mean_delta_acc_pp": 0.3499289353688558,
+          "std_delta_acc_pp": 0.02827913056055139,
+          "positive_acc_seeds": 3,
+          "mean_delta_macro_f1_pp": 2.0987418895066665,
+          "std_delta_macro_f1_pp": 1.2691417325312953,
+          "positive_macro_f1_seeds": 3
+        },
+        "Toys": {
+          "mean_delta_acc_pp": -0.04832148551940918,
+          "std_delta_acc_pp": 0.15407189420716697,
+          "positive_acc_seeds": 1,
+          "mean_delta_macro_f1_pp": 0.38058072678567684,
+          "std_delta_macro_f1_pp": 0.12327510095705933,
+          "positive_macro_f1_seeds": 3
+        },
+        "Grocery": {
+          "mean_delta_acc_pp": -0.10737180709838867,
+          "std_delta_acc_pp": 0.0905193603887192,
+          "positive_acc_seeds": 0,
+          "mean_delta_macro_f1_pp": -1.1464496420120114,
+          "std_delta_macro_f1_pp": 0.9989293126863314,
+          "positive_macro_f1_seeds": 0
+        }
+      },
+      "macro_mean_delta_acc_pp": 0.06474521425035264,
+      "macro_mean_delta_macro_f1_pp": 0.44429099142677736,
+      "paired_delta_mean_acc_pp": 0.06474521425035265,
+      "paired_delta_std_acc_pp": 0.22837813295848672,
+      "paired_delta_mean_macro_f1_pp": 0.44429099142677736,
+      "paired_delta_std_macro_f1_pp": 1.6222925953069962
+    }
+  },
+  "gates": {
+    "gate1_graph_computation": {
+      "candidates": {
+        "joint_rd": {
+          "macro_mean_delta_acc_pp": 5.323311355378892,
+          "dataset_mean_acc_pp": {
+            "Movies": 4.7890424728393555,
+            "Toys": 5.870982011159261,
+            "Grocery": 5.3099095821380615
+          },
+          "passes": true
+        },
+        "ownership_rd": {
+          "macro_mean_delta_acc_pp": 5.388056569629245,
+          "dataset_mean_acc_pp": {
+            "Movies": 5.138971408208211,
+            "Toys": 5.822660525639852,
+            "Grocery": 5.202537775039673
+          },
+          "passes": true
+        }
+      },
+      "verdict": "GO_GRAPH"
+    },
+    "gate2_ownership_preserving": {
+      "macro_mean_delta_acc_pp": 0.06474521425035264,
+      "macro_mean_delta_macro_f1_pp": 0.44429099142677736,
+      "dataset_mean_delta_acc_pp": {
+        "Movies": 0.3499289353688558,
+        "Toys": -0.04832148551940918,
+        "Grocery": -0.10737180709838867
+      },
+      "positive_dataset_count": 1,
+      "datasets_at_or_below_minus_0_5pp": 0,
+      "strong_go": false,
+      "hold_separate_propagation": false,
+      "verdict": "GO_VIABLE"
+    },
+    "gate3_absolute_parent_quality": {
+      "verdict": "CONDITIONAL_PARENT_PERFORMANCE_GAP",
+      "Movies": {
+        "reference": "MAP-v2 lowpass_uniform, ORED-0 Movies seed42 Val reference",
+        "reference_val_acc_pct": 58.0683884273523,
+        "reference_val_macro_f1_pct": 49.86,
+        "ored_ownership_val_acc_pct": 57.04858899116516,
+        "ored_ownership_val_macro_f1_pct": 50.67207921307415,
+        "gap_acc_pp": -1.0197994361871423,
+        "gap_macro_f1_pp": 0.8120792130741492
+      },
+      "Toys": "NO COMPARABLE VAL REFERENCE",
+      "Grocery": "NO COMPARABLE VAL REFERENCE"
+    }
+  }
+}

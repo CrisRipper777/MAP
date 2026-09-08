@@ -2,8 +2,95 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+from torch_geometric.nn.conv.gcn_conv import gcn_norm
+from torch_geometric.utils import scatter
 
 from .common import get_activation, make_norm
+
+
+def normalize_restart_adjacency(
+    edge_index: torch.Tensor,
+    num_nodes: int,
+    dtype: torch.dtype,
+    add_self_loops: bool = True,
+) -> tuple[torch.Tensor, torch.Tensor | None]:
+    """Return the MAP-v2 GCN-normalized uniform adjacency exactly once."""
+    return gcn_norm(
+        edge_index,
+        edge_weight=None,
+        num_nodes=int(num_nodes),
+        improved=False,
+        add_self_loops=bool(add_self_loops),
+        flow="source_to_target",
+        dtype=dtype,
+    )
+
+
+def apply_restart_diffusion(
+    h0: torch.Tensor,
+    norm_edge_index: torch.Tensor,
+    norm_edge_weight: torch.Tensor | None,
+    num_hops: int,
+    restart: float,
+) -> torch.Tensor:
+    """Apply MAP-v2's shallow restart recurrence to one or more streams."""
+    if int(num_hops) <= 0:
+        return h0
+    if norm_edge_weight is None or norm_edge_index.numel() == 0:
+        return h0
+
+    row, col = norm_edge_index
+    weight_shape = (-1,) + (1,) * (h0.dim() - 1)
+    h = h0
+    restart_value = min(max(float(restart), 0.0), 1.0)
+    for _ in range(int(num_hops)):
+        propagated = scatter(
+            h[row] * norm_edge_weight.view(weight_shape),
+            col,
+            dim=0,
+            dim_size=h0.size(0),
+            reduce="sum",
+        )
+        h = (1.0 - restart_value) * propagated + restart_value * h0
+    return h
+
+
+class RestartDiffusion(nn.Module):
+    """Parameter-free MAP-v2 shallow restart diffusion helper."""
+
+    def __init__(self, num_hops: int = 2, restart: float = 0.15, add_self_loops: bool = True) -> None:
+        super().__init__()
+        if int(num_hops) < 0:
+            raise ValueError(f"num_hops must be >= 0, got {num_hops}")
+        self.num_hops = int(num_hops)
+        self.restart = float(restart)
+        self.add_self_loops = bool(add_self_loops)
+
+    def forward(
+        self,
+        h0: torch.Tensor,
+        edge_index: torch.Tensor | None = None,
+        norm_edge_index: torch.Tensor | None = None,
+        norm_edge_weight: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        if self.num_hops <= 0:
+            return h0
+        if norm_edge_index is None:
+            if edge_index is None:
+                edge_index = torch.empty((2, 0), dtype=torch.long, device=h0.device)
+            norm_edge_index, norm_edge_weight = normalize_restart_adjacency(
+                edge_index.to(device=h0.device, dtype=torch.long),
+                num_nodes=int(h0.size(0)),
+                dtype=h0.dtype,
+                add_self_loops=self.add_self_loops,
+            )
+        return apply_restart_diffusion(
+            h0,
+            norm_edge_index,
+            norm_edge_weight,
+            self.num_hops,
+            self.restart,
+        )
 
 
 class ModalityProjector(nn.Module):

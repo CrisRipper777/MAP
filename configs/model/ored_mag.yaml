@@ -3,6 +3,9 @@ variant: p0
 hidden_dim: 256
 factor_dim: 128
 dropout: 0.2
+num_hops: 2
+restart: 0.15
+diffusion_add_self_loops: true
 activation: gelu
 norm: layernorm
 lambda_common: 0.02

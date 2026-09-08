@@ -5,21 +5,31 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from .common import get_activation, make_norm
-from .ored_components import ReconstructionHead, SemanticFactorizer
+from .ored_components import (
+    ReconstructionHead,
+    RestartDiffusion,
+    SemanticFactorizer,
+    normalize_restart_adjacency,
+)
 
 
 class Model(nn.Module):
-    """ORED-MAG P0 semantic ownership factorizer.
+    """ORED-MAG semantic ownership encoder and ORED-2 matched variants.
 
-    The model accepts the framework's edge argument for interface compatibility,
-    but the representation is computed from node features only.
+    ``p0`` preserves the ORED-1 topology-free encoder.  The other variants keep
+    its factorizer, fusion, auxiliary losses, and output dimensions fixed while
+    adding only the pre-registered MAP-v2-style refinement and/or diffusion.
     """
 
     def __init__(self, cfg, data_info):
         super().__init__()
         variant = str(cfg.model.get("variant", "p0")).lower()
-        if variant != "p0":
-            raise ValueError(f"ored_mag supports only variant=p0, got {variant!r}")
+        valid_variants = {"p0", "p0_refine", "joint_rd", "ownership_rd"}
+        if variant not in valid_variants:
+            raise ValueError(
+                "ored_mag variant must be one of "
+                f"{sorted(valid_variants)}, got {variant!r}"
+            )
 
         text_dim = int(data_info["text_dim"])
         visual_dim = int(data_info["visual_dim"])
@@ -44,6 +54,7 @@ class Model(nn.Module):
         self.visual_dim = visual_dim
         self.hidden_dim = hidden_dim
         self.factor_dim = factor_dim
+        self.variant = variant
 
         self.factorizer = SemanticFactorizer(
             text_dim, visual_dim, hidden_dim, factor_dim, dropout, activation, norm
@@ -56,6 +67,25 @@ class Model(nn.Module):
             get_activation(activation),
             nn.Dropout(dropout),
         )
+
+        # Keep the original p0 module graph untouched.  All three ORED-2
+        # controls share exactly these modules; diffusion itself has no params.
+        self.output_mlp = None
+        self.output_norm = None
+        self.restart_diffusion = None
+        if variant != "p0":
+            self.output_mlp = nn.Sequential(
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.LayerNorm(hidden_dim),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+                nn.Linear(hidden_dim, hidden_dim),
+            )
+            self.output_norm = nn.LayerNorm(hidden_dim)
+            num_hops = int(cfg.model.get("num_hops", 2))
+            restart = float(cfg.model.get("restart", 0.15))
+            add_self_loops = bool(cfg.model.get("diffusion_add_self_loops", True))
+            self.restart_diffusion = RestartDiffusion(num_hops, restart, add_self_loops)
 
         self.lambda_common = float(cfg.model.get("lambda_common", 0.1))
         self.lambda_orth = float(cfg.model.get("lambda_orth", 0.01))
@@ -72,11 +102,76 @@ class Model(nn.Module):
         x_v = x[:, self.text_dim : self.text_dim + self.visual_dim]
         return x_t, x_v
 
-    def _encode(self, x: torch.Tensor) -> tuple[dict[str, torch.Tensor], torch.Tensor]:
+    def _encode_local(self, x: torch.Tensor) -> tuple[dict[str, torch.Tensor], torch.Tensor]:
         x_t, x_v = self._split_modalities(x)
         factors = self.factorizer(x_t, x_v)
-        z = self.fusion(torch.cat([factors["c"], factors["p_t"], factors["p_v"]], dim=-1))
-        return factors, z
+        z_local = self.fusion(torch.cat([factors["c"], factors["p_t"], factors["p_v"]], dim=-1))
+        return factors, z_local
+
+    def _encode(self, x: torch.Tensor) -> tuple[dict[str, torch.Tensor], torch.Tensor]:
+        """Preserve the ORED-1 local encoding API used by diagnostics/tests."""
+        return self._encode_local(x)
+
+    def _refine(self, value: torch.Tensor) -> torch.Tensor:
+        if self.output_mlp is None or self.output_norm is None:
+            return value
+        return self.output_norm(self.output_mlp(value) + value)
+
+    def _edge_index_or_empty(
+        self, edge_index: torch.Tensor | None, device: torch.device
+    ) -> torch.Tensor:
+        if edge_index is None:
+            return torch.empty((2, 0), dtype=torch.long, device=device)
+        return edge_index.to(device=device, dtype=torch.long)
+
+    def _variant_encoding(
+        self,
+        x: torch.Tensor,
+        edge_index: torch.Tensor | None,
+    ) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor], torch.Tensor]:
+        factors, z_local = self._encode_local(x)
+        c0, pt0, pv0 = factors["c"], factors["p_t"], factors["p_v"]
+        states: dict[str, torch.Tensor] = {
+            "C0": c0,
+            "Pt0": pt0,
+            "Pv0": pv0,
+            "z_local": z_local,
+        }
+
+        if self.variant == "p0":
+            return factors, states, z_local
+        if self.variant == "p0_refine":
+            return factors, states, self._refine(z_local)
+
+        assert self.restart_diffusion is not None
+        edge_index = self._edge_index_or_empty(edge_index, x.device)
+        norm_edge_index, norm_edge_weight = normalize_restart_adjacency(
+            edge_index,
+            num_nodes=int(x.size(0)),
+            dtype=z_local.dtype,
+            add_self_loops=self.restart_diffusion.add_self_loops,
+        )
+
+        if self.variant == "joint_rd":
+            joint2 = self.restart_diffusion(
+                z_local,
+                norm_edge_index=norm_edge_index,
+                norm_edge_weight=norm_edge_weight,
+            )
+            states.update({"joint0": z_local, "joint2": joint2})
+            return factors, states, self._refine(joint2)
+
+        # One normalized adjacency is reused for the three ownership streams.
+        ownership0 = torch.stack([c0, pt0, pv0], dim=1)
+        ownership2 = self.restart_diffusion(
+            ownership0,
+            norm_edge_index=norm_edge_index,
+            norm_edge_weight=norm_edge_weight,
+        )
+        c2, pt2, pv2 = ownership2.unbind(dim=1)
+        u = self.fusion(torch.cat([c2, pt2, pv2], dim=-1))
+        states.update({"C2": c2, "Pt2": pt2, "Pv2": pv2, "u": u})
+        return factors, states, self._refine(u)
 
     def _orth_loss(self, c: torch.Tensor, p: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         batch, d = c.size(0), c.size(1)
@@ -135,7 +230,7 @@ class Model(nn.Module):
         return aux_loss, aux_info
 
     def forward(self, x: torch.Tensor, edge_index=None):
-        factors, z = self._encode(x)
+        factors, _, z = self._variant_encoding(x, edge_index)
         if self.training:
             aux_loss, aux_info = self._compute_aux(factors)
         else:
@@ -154,12 +249,32 @@ class Model(nn.Module):
         self.eval()
         if device is None:
             device = next(self.parameters()).device
+        if self.variant in {"joint_rd", "ownership_rd"}:
+            edge_index = self._edge_index_or_empty(edge_index, device)
+            z, _, _, _, _ = self.forward(x.to(device), edge_index)
+            return z.detach().cpu()
+
         outputs = torch.empty((x.size(0), self.out_dim), dtype=x.dtype, device="cpu")
         for start in range(0, x.size(0), batch_size):
             end = min(start + batch_size, x.size(0))
             z, _, _, _, _ = self.forward(x[start:end].to(device), None)
             outputs[start:end] = z.detach().cpu()
         return outputs
+
+    @torch.no_grad()
+    def encode_ored_states(
+        self,
+        x: torch.Tensor,
+        edge_index: torch.Tensor | None = None,
+        device: torch.device | None = None,
+    ) -> dict[str, torch.Tensor]:
+        """Return full-graph ORED-2 states on CPU for offline diagnosis."""
+        self.eval()
+        if device is None:
+            device = next(self.parameters()).device
+        _, states, z = self._variant_encoding(x.to(device), edge_index)
+        states["z"] = z
+        return {key: value.detach().cpu() for key, value in states.items()}
 
     @torch.no_grad()
     def encode_factors(

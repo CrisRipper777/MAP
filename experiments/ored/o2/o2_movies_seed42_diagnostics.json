@@ -1,0 +1,90 @@
+{
+  "stage": "ORED-2A",
+  "dataset": "Movies",
+  "seed": 42,
+  "uses_test_labels_or_metrics": false,
+  "p0_refine": {
+    "z_local": {
+      "finite": true,
+      "mean_norm": 10.677489280700684,
+      "effective_rank": 22.25162124633789
+    },
+    "z_final": {
+      "finite": true,
+      "mean_norm": 16.21735954284668,
+      "effective_rank": 18.538530349731445
+    },
+    "relative_refinement_update_mean": 1.0091896057128906
+  },
+  "joint_rd": {
+    "joint0": {
+      "finite": true,
+      "mean_norm": 10.752869606018066,
+      "effective_rank": 26.961681365966797
+    },
+    "joint2": {
+      "finite": true,
+      "mean_norm": 7.410571575164795,
+      "effective_rank": 11.097614288330078
+    },
+    "graph_change_ratio_mean": 0.5128649473190308,
+    "cos_joint0_joint2_mean": 0.8912242650985718,
+    "graph_update_nonzero": true
+  },
+  "ownership_rd": {
+    "C": {
+      "before": {
+        "finite": true,
+        "mean_norm": 4.370095729827881,
+        "effective_rank": 5.199018955230713
+      },
+      "after": {
+        "finite": true,
+        "mean_norm": 3.6122615337371826,
+        "effective_rank": 2.771542549133301
+      },
+      "relative_update_mean": 0.3702745735645294,
+      "cos_before_after_mean": 0.9566430449485779
+    },
+    "Pt": {
+      "before": {
+        "finite": true,
+        "mean_norm": 3.6490776538848877,
+        "effective_rank": 7.926681995391846
+      },
+      "after": {
+        "finite": true,
+        "mean_norm": 2.2929093837738037,
+        "effective_rank": 6.94274377822876
+      },
+      "relative_update_mean": 0.5358985662460327,
+      "cos_before_after_mean": 0.8755970001220703
+    },
+    "Pv": {
+      "before": {
+        "finite": true,
+        "mean_norm": 4.882969379425049,
+        "effective_rank": 23.630451202392578
+      },
+      "after": {
+        "finite": true,
+        "mean_norm": 3.028980016708374,
+        "effective_rank": 17.617502212524414
+      },
+      "relative_update_mean": 0.5579251646995544,
+      "cos_before_after_mean": 0.8716643452644348
+    },
+    "u": {
+      "finite": true,
+      "mean_norm": 10.524260520935059,
+      "effective_rank": 22.568405151367188
+    },
+    "z": {
+      "finite": true,
+      "mean_norm": 16.316408157348633,
+      "effective_rank": 17.140857696533203
+    },
+    "graph_update_nonzero": true
+  },
+  "interpretation": "The contrast is ownership-preserving factor-wise contextualization versus pre-fused joint contextualization; uniform diffusion is linear node mixing, but Fusion nonlinearity occurs before versus after diffusion."
+}

@@ -1,0 +1,50 @@
+{
+  "variants": {
+    "p0": {
+      "model_params": 1037568,
+      "head_params": 5140,
+      "total_params": 1042708
+    },
+    "p0_refine": {
+      "model_params": 1170176,
+      "head_params": 5140,
+      "total_params": 1175316
+    },
+    "joint_rd": {
+      "model_params": 1170176,
+      "head_params": 5140,
+      "total_params": 1175316
+    },
+    "ownership_rd": {
+      "model_params": 1170176,
+      "head_params": 5140,
+      "total_params": 1175316
+    }
+  },
+  "matched_control_variants": [
+    "p0_refine",
+    "joint_rd",
+    "ownership_rd"
+  ],
+  "parity_by_dataset": {
+    "Movies": {
+      "model_parameter_parity": true,
+      "head_parameter_parity": true,
+      "total_parameter_parity": true
+    },
+    "Toys": {
+      "model_parameter_parity": true,
+      "head_parameter_parity": true,
+      "total_parameter_parity": true
+    },
+    "Grocery": {
+      "model_parameter_parity": true,
+      "head_parameter_parity": true,
+      "total_parameter_parity": true
+    }
+  },
+  "model_parameter_parity": true,
+  "head_parameter_parity": true,
+  "total_parameter_parity": true,
+  "diffusion_parameter_count": 0
+}

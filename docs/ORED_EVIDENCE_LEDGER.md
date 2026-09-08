@@ -20,6 +20,20 @@
    auxiliary losses。
 4. **O1/O1.5 已支持 ownership states 可作为 graph states。** 该结论来自已有
    `exp/oft-mag` 研究记录；ORED-0 只登记其作为后续输入证据，不实现对应传播。
+5. **P0 Semantic Ownership migration into MAP = LOCKED FOR ORED DEVELOPMENT.**
+   ORED-1/ORED-2 的 migration audit 记录了 architecture/state_dict parity passed、
+   topology invariance exact、factor health passed、Acc parity passed。跨 repository
+   Macro-F1 没有作为 veto，因为两个 repository 的 training protocols 不同；此后
+   所有比较只使用 MAP unified protocol。这里不声称 bitwise training reproduction
+   passed。
+6. **Stable restart diffusion on Semantic Ownership representation = SUPPORTED IN
+   ORED.** ORED-2 的 joint_rd 和 ownership_rd 相对 matched p0_refine 在三个数据集
+   上都获得正的 mean Val Acc graph gain，且 graph update 非零、finite diagnostics
+   通过。
+7. **Ownership-preserving factor-wise contextualization is performance-viable but
+   superiority over pre-fused joint contextualization is NOT YET established.**
+   ORED-2 的 Ownership-RD − Joint-RD 宏平均 Acc 为正但低于预注册 STRONG_GO
+   阈值，故只登记为 VIABLE，不包装为 superiority。
 
 ## CLOSED / NOT TO REINTRODUCE
 
@@ -38,16 +52,15 @@
 
 后续可研究但尚未被 ORED-0 证明的方向：
 
-1. Joint-RD vs Ownership-RD
-2. Ownership-conditioned Composition
-3. Ownership-conditioned Exposure
-4. Exposure × Composition
-5. same-node cross-factor conditioning without cross-factor transport
+1. Ownership-conditioned Composition
+2. Ownership-conditioned Exposure
+3. Exposure × Composition
+4. same-node cross-factor conditioning without cross-factor transport
 
 ## Guardrails
 
 - ORED-0 没有实现 evidence scorer、Semantic Ownership propagation、Exposure、
   Composition、restart factor propagation 或新 loss。
 - `docs/pard_mag_deep_research_proposal.md` 保持原样；PaRD-MAG 不属于本阶段实现。
-- Ledger 中的 OPEN 项不代表已获准进入默认模型；进入 ORED-1 前必须保持当前
-  NC protocol、split 和 checkpoint selection 不变。
+- Ledger 中的 OPEN 项不代表已获准进入默认模型；后续阶段必须保持当前 MAP
+  unified NC protocol、split 和 checkpoint selection 不变。

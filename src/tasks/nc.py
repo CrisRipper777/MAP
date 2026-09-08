@@ -187,6 +187,8 @@ def _run_single_nc(
     best_test: dict[str, float] = {}
     best_model_state = None
     best_head_state = None
+    best_epoch = 0
+    early_stop_epoch = 0
     patience_total = int(cfg.task.patience)
     patience_left = patience_total
     early_stop_min_epoch = int(cfg.task.get("early_stop_min_epoch", 1))
@@ -280,6 +282,7 @@ def _run_single_nc(
                 "val_acc": val_metrics["acc"],
                 "val_macro_f1": val_metrics["macro_f1"],
             }
+            best_epoch = epoch
             best_model_state = clone_state_dict(model)
             best_head_state = clone_state_dict(classifier)
             patience_left = patience_total
@@ -289,6 +292,7 @@ def _run_single_nc(
             logger.info("Patience %d/%d | Best Val Acc %.2f", patience_used, patience_total, format_pct(best_val))
             if patience_left <= 0:
                 logger.info("Early stopping at epoch %03d", epoch)
+                early_stop_epoch = epoch
                 stop_early = True
         del z
         torch.cuda.empty_cache()
@@ -404,6 +408,7 @@ def _run_single_nc(
             "val_acc": val_metrics["acc"],
             "val_macro_f1": val_metrics["macro_f1"],
         }
+        best_epoch = epoch
         if evaluate_test:
             test_metrics = _evaluate_split(classifier, z, data.y, data.test_idx, device, inference_batch_size)
             best_test["test_acc"] = test_metrics["acc"]
@@ -425,6 +430,9 @@ def _run_single_nc(
                     logger,
                 )
             )
+
+    best_test["best_epoch"] = float(best_epoch)
+    best_test["early_stop_epoch"] = float(early_stop_epoch or epoch)
 
     if hasattr(model, "_batch_n_id"):
         model._batch_n_id = None
@@ -448,9 +456,12 @@ def _run_single_nc(
         logger.info("Saved checkpoint: %s", path)
 
     logger.info(
-        "[Run %d] Best Val Acc %.2f",
+        "[Run %d] Best Val Acc %.2f | Best Val F1 %.2f | Best Epoch %03d | Early Stop %03d",
         run_id + 1,
         format_pct(best_test["val_acc"]),
+        format_pct(best_test["val_macro_f1"]),
+        int(best_test["best_epoch"]),
+        int(best_test["early_stop_epoch"]),
     )
     if evaluate_test:
         logger.info(
@@ -480,12 +491,18 @@ def run_nc(
         for run_id in range(int(cfg.num_runs))
     ]
     val_acc = [item["val_acc"] for item in run_results]
+    val_macro_f1 = [item["val_macro_f1"] for item in run_results]
     val_mean, val_std = mean_std(val_acc)
+    f1_mean, f1_std = mean_std(val_macro_f1)
     logger.info("============================================================")
     logger.info("Final Results over %d runs", int(cfg.num_runs))
     logger.info("============================================================")
     logger.info("Highest Valid Acc: %.2f ± %.2f", format_pct(val_mean), format_pct(val_std))
-    output = {"val_acc": (val_mean, val_std)}
+    output = {
+        "val_acc": (val_mean, val_std),
+        "val_macro_f1": (f1_mean, f1_std),
+    }
+    logger.info("Val Macro-F1: %.2f ± %.2f", format_pct(f1_mean), format_pct(f1_std))
     if evaluate_test:
         test_acc = [item["test_acc"] for item in run_results]
         test_f1 = [item["test_macro_f1"] for item in run_results]
@@ -495,12 +512,15 @@ def run_nc(
         logger.info("Test Macro-F1: %.2f ± %.2f", format_pct(f1_mean), format_pct(f1_std))
         output.update({"test_acc": (acc_mean, acc_std), "test_macro_f1": (f1_mean, f1_std)})
     primary_keys = set(output)
-    for key in sorted(set().union(*(item.keys() for item in run_results)) - primary_keys - {"val_macro_f1"}):
+    for key in sorted(set().union(*(item.keys() for item in run_results)) - primary_keys):
         values = [item[key] for item in run_results if key in item]
         if len(values) != len(run_results):
             continue
         mean, std = mean_std(values)
         output[key] = (mean, std)
-        logger.info("%s: %.2f ± %.2f", key, format_pct(mean), format_pct(std))
+        if key in {"best_epoch", "early_stop_epoch"}:
+            logger.info("%s: %.2f ± %.2f", key, mean, std)
+        else:
+            logger.info("%s: %.2f ± %.2f", key, format_pct(mean), format_pct(std))
     logger.info("============================================================")
     return output
