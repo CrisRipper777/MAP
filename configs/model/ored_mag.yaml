@@ -1,0 +1,11 @@
+name: ored_mag
+variant: p0
+hidden_dim: 256
+factor_dim: 128
+dropout: 0.2
+activation: gelu
+norm: layernorm
+lambda_common: 0.02
+lambda_orth: 0.01
+lambda_recon: 0.3
+orth_fallback_batch: 16

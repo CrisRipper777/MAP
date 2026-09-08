@@ -1,0 +1,31 @@
+{
+  "stage": "ORED-1",
+  "source_repo": "/hdd1/DataInHere/YHF/exp",
+  "source_sha": "9f2ed253763c4bd2b7e14e534ae8c392c89c5551",
+  "model": "biaxis_p0",
+  "dataset": "Movies",
+  "seed": 42,
+  "evaluate_test": false,
+  "source_rerun": {
+    "val_acc": 0.5171,
+    "val_macro_f1": 0.3762,
+    "best_epoch": 57,
+    "early_stop_epoch": 87
+  },
+  "ored_formal_run": {
+    "val_acc": 0.5182963609695435,
+    "val_macro_f1": 0.4000115625842959,
+    "best_epoch": 71,
+    "early_stop_epoch": 101
+  },
+  "ored_minus_source_pp": {
+    "val_acc": 0.12,
+    "val_macro_f1": 2.38
+  },
+  "parity_threshold_pp": {
+    "val_acc_abs_max": 0.2,
+    "val_macro_f1_abs_max": 0.5
+  },
+  "migration_parity": "HOLD_IMPLEMENTATION",
+  "note": "Source rerun used the current exp/oft-mag P0 configuration without source edits; ORED used the user-specified MAP formal command and existing MAP unified NC protocol. No protocol or tuning change was made."
+}

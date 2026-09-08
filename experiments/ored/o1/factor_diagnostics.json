@@ -1,0 +1,105 @@
+{
+  "dataset": "Movies",
+  "seed": 42,
+  "checkpoint": "outputs/ored/o1/ored_p0_movies_seed42_best.pt",
+  "uses_test_labels_or_metrics": false,
+  "topology_invariance": {
+    "original": {
+      "max_abs_delta": 0.0,
+      "mean_abs_delta": 0.0,
+      "allclose": true
+    },
+    "empty": {
+      "max_abs_delta": 0.0,
+      "mean_abs_delta": 0.0,
+      "allclose": true
+    },
+    "shuffled": {
+      "max_abs_delta": 0.0,
+      "mean_abs_delta": 0.0,
+      "allclose": true
+    },
+    "random": {
+      "max_abs_delta": 0.0,
+      "mean_abs_delta": 0.0,
+      "allclose": true
+    }
+  },
+  "common_alignment": {
+    "mean_cosine_c_t_c_v": 0.6775898933410645,
+    "min_cosine_c_t_c_v": 0.10492203384637833,
+    "max_cosine_c_t_c_v": 0.9191533327102661
+  },
+  "factor_pair_cosines": {
+    "mean_cosine_p_t_p_v": 0.011711308732628822,
+    "mean_cosine_c_t_p_t": -0.034483302384614944,
+    "mean_cosine_c_v_p_v": -0.017580833286046982
+  },
+  "reconstruction_mse": {
+    "text": 0.01064146869242077,
+    "visual": 0.05143201831663868
+  },
+  "factor_stats": {
+    "c": {
+      "finite": true,
+      "mean_norm": 4.89477014541626,
+      "min_norm": 3.6088483333587646,
+      "max_norm": 6.3925089836120605,
+      "per_dim_std_mean": 0.23421460390090942,
+      "per_dim_std_min": 0.14898227155208588,
+      "per_dim_std_max": 0.3857218325138092,
+      "effective_rank": 4.334991931915283
+    },
+    "c_t": {
+      "finite": true,
+      "mean_norm": 5.146011829376221,
+      "min_norm": 3.8899874687194824,
+      "max_norm": 6.621999263763428,
+      "per_dim_std_mean": 0.25157424807548523,
+      "per_dim_std_min": 0.14139322936534882,
+      "per_dim_std_max": 0.4122864902019501,
+      "effective_rank": 4.0644450187683105
+    },
+    "c_v": {
+      "finite": true,
+      "mean_norm": 5.537635326385498,
+      "min_norm": 3.896381378173828,
+      "max_norm": 7.0454816818237305,
+      "per_dim_std_mean": 0.3401714265346527,
+      "per_dim_std_min": 0.2511816620826721,
+      "per_dim_std_max": 0.5082966089248657,
+      "effective_rank": 9.715672492980957
+    },
+    "p_t": {
+      "finite": true,
+      "mean_norm": 2.8441154956817627,
+      "min_norm": 1.8534663915634155,
+      "max_norm": 5.838082313537598,
+      "per_dim_std_mean": 0.2096288502216339,
+      "per_dim_std_min": 0.1233980730175972,
+      "per_dim_std_max": 0.34639546275138855,
+      "effective_rank": 12.329686164855957
+    },
+    "p_v": {
+      "finite": true,
+      "mean_norm": 4.564202308654785,
+      "min_norm": 3.0700793266296387,
+      "max_norm": 6.575026035308838,
+      "per_dim_std_mean": 0.37891483306884766,
+      "per_dim_std_min": 0.2700340449810028,
+      "per_dim_std_max": 0.5051195025444031,
+      "effective_rank": 28.71611976623535
+    },
+    "z_local": {
+      "finite": true,
+      "mean_norm": 12.388691902160645,
+      "min_norm": 10.720016479492188,
+      "max_norm": 13.693498611450195,
+      "per_dim_std_mean": 0.6034327149391174,
+      "per_dim_std_min": 0.06930654495954514,
+      "per_dim_std_max": 1.151924729347229,
+      "effective_rank": 19.456321716308594
+    }
+  },
+  "nan_or_inf_detected": false
+}

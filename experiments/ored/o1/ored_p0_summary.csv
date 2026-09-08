@@ -1,0 +1,14 @@
+metric,value,unit,scope
+ored_p0_val_acc,0.5182963609695435,fraction,ORED formal val
+ored_p0_val_macro_f1,0.4000115625842959,fraction,ORED formal val
+historical_p0_val_acc,0.5171,fraction,historical reference
+historical_p0_val_macro_f1,0.3762,fraction,historical reference
+delta_acc_pp_vs_historical,0.12,percentage_points,ORED - historical
+delta_macro_f1_pp_vs_historical,2.38,percentage_points,ORED - historical
+source_rerun_val_acc,0.5171,fraction,source val-only rerun
+source_rerun_val_macro_f1,0.3762,fraction,source val-only rerun
+ored_minus_source_acc_pp,0.12,percentage_points,migration comparison
+ored_minus_source_macro_f1_pp,2.38,percentage_points,migration comparison
+params_model,1037568,count,ORED model
+params_head,5140,count,NC head
+params_model_plus_head,1042708,count,model + head

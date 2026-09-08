@@ -1,0 +1,27 @@
+{
+  "stage": "ORED-1",
+  "status": "HOLD_IMPLEMENTATION",
+  "dataset": "Movies",
+  "seed": 42,
+  "source_sha": "9f2ed253763c4bd2b7e14e534ae8c392c89c5551",
+  "checkpoint": "outputs/ored/o1/ored_p0_movies_seed42_best.pt",
+  "best_epoch": 71,
+  "early_stop_epoch": 101,
+  "ored_p0_val_acc": 0.5182963609695435,
+  "ored_p0_val_macro_f1": 0.4000115625842959,
+  "historical_p0_val_acc": 0.5171,
+  "historical_p0_val_macro_f1": 0.3762,
+  "delta_acc_pp_vs_historical": 0.12,
+  "delta_macro_f1_pp_vs_historical": 2.38,
+  "historical_acceptance": {
+    "acc_abs_pp_max": 0.3,
+    "macro_f1_abs_pp_max": 1.0
+  },
+  "params_model": 1037568,
+  "params_head": 5140,
+  "params_model_plus_head": 1042708,
+  "evaluate_test": false,
+  "formal_command_scope": "Movies seed42, val-only, existing unified NC protocol",
+  "diagnostics": "experiments/ored/o1/factor_diagnostics.json",
+  "source_rerun_comparison": "experiments/ored/o1/source_rerun_comparison.json"
+}

@@ -1,0 +1,154 @@
+{
+  "stage": "ORED-1",
+  "variant": "p0",
+  "source_sha": "9f2ed253763c4bd2b7e14e534ae8c392c89c5551",
+  "checkpoint": "outputs/ored/o1/ored_p0_movies_seed42_best.pt",
+  "source_model_module": "exp/src/models/biaxis_p0.py",
+  "ored_model_module": "src/models/ored_mag.py",
+  "source_state_dict_keys_match": true,
+  "total_model_parameters": 1037568,
+  "num_state_tensors": 42,
+  "state_dict": {
+    "factorizer.text_projector.net.0.weight": [
+      256,
+      768
+    ],
+    "factorizer.text_projector.net.0.bias": [
+      256
+    ],
+    "factorizer.text_projector.net.1.weight": [
+      256
+    ],
+    "factorizer.text_projector.net.1.bias": [
+      256
+    ],
+    "factorizer.text_projector.net.4.weight": [
+      256,
+      256
+    ],
+    "factorizer.text_projector.net.4.bias": [
+      256
+    ],
+    "factorizer.visual_projector.net.0.weight": [
+      256,
+      768
+    ],
+    "factorizer.visual_projector.net.0.bias": [
+      256
+    ],
+    "factorizer.visual_projector.net.1.weight": [
+      256
+    ],
+    "factorizer.visual_projector.net.1.bias": [
+      256
+    ],
+    "factorizer.visual_projector.net.4.weight": [
+      256,
+      256
+    ],
+    "factorizer.visual_projector.net.4.bias": [
+      256
+    ],
+    "factorizer.common_encoder.0.weight": [
+      128,
+      256
+    ],
+    "factorizer.common_encoder.0.bias": [
+      128
+    ],
+    "factorizer.common_encoder.1.weight": [
+      128
+    ],
+    "factorizer.common_encoder.1.bias": [
+      128
+    ],
+    "factorizer.common_encoder.3.weight": [
+      128,
+      128
+    ],
+    "factorizer.common_encoder.3.bias": [
+      128
+    ],
+    "factorizer.private_text_encoder.0.weight": [
+      128,
+      256
+    ],
+    "factorizer.private_text_encoder.0.bias": [
+      128
+    ],
+    "factorizer.private_text_encoder.1.weight": [
+      128
+    ],
+    "factorizer.private_text_encoder.1.bias": [
+      128
+    ],
+    "factorizer.private_text_encoder.3.weight": [
+      128,
+      128
+    ],
+    "factorizer.private_text_encoder.3.bias": [
+      128
+    ],
+    "factorizer.private_visual_encoder.0.weight": [
+      128,
+      256
+    ],
+    "factorizer.private_visual_encoder.0.bias": [
+      128
+    ],
+    "factorizer.private_visual_encoder.1.weight": [
+      128
+    ],
+    "factorizer.private_visual_encoder.1.bias": [
+      128
+    ],
+    "factorizer.private_visual_encoder.3.weight": [
+      128,
+      128
+    ],
+    "factorizer.private_visual_encoder.3.bias": [
+      128
+    ],
+    "recon_text_head.net.0.weight": [
+      256,
+      256
+    ],
+    "recon_text_head.net.0.bias": [
+      256
+    ],
+    "recon_text_head.net.2.weight": [
+      256,
+      256
+    ],
+    "recon_text_head.net.2.bias": [
+      256
+    ],
+    "recon_visual_head.net.0.weight": [
+      256,
+      256
+    ],
+    "recon_visual_head.net.0.bias": [
+      256
+    ],
+    "recon_visual_head.net.2.weight": [
+      256,
+      256
+    ],
+    "recon_visual_head.net.2.bias": [
+      256
+    ],
+    "fusion.0.weight": [
+      256,
+      384
+    ],
+    "fusion.0.bias": [
+      256
+    ],
+    "fusion.1.weight": [
+      256
+    ],
+    "fusion.1.bias": [
+      256
+    ]
+  }
+}
