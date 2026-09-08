@@ -1,0 +1,12 @@
+defaults:
+  - map_mag_v3
+  - _self_
+
+name: map_mag_v3
+version: map_mag_v3_full
+use_conflict_channel: true
+use_self_residual: true
+use_modality_prototypes: true
+lambda_proto_diversity: 0.01
+# Keep the shared Hadamard LP decoder required by unified_sampled_lp_v1.
+lp_pair_operator: null

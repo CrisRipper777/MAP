@@ -1,0 +1,51 @@
+name: map_mag_v2
+version: map_mag_v2
+
+hidden_dim: 256
+dropout: 0.2
+norm: layernorm
+
+# Low-pass diffusion backbone on a semantic-reweighted graph.
+num_hops: 2
+# Keep NeighborLoader sampling depth aligned with the diffusion depth.
+num_layers: ${model.num_hops}
+restart: 0.15
+diffusion_add_self_loops: true
+full_graph_training: true
+
+# Reliability fusion.
+use_reliability: true
+reliability_min: 0.1
+reliability_mode: single # single | double
+
+# Structure-semantic edge reweighting.
+use_semantic_edge_weight: true
+edge_weight_mode: avg_cos # avg_cos | text_only | visual_only | reliability_aware | learnable_scalar
+edge_weight_min: 0.1
+edge_weight_temperature: 2.0
+edge_weight_learnable_init: 1.0
+
+# Structure path.
+structure_mode: lowpass # lowpass | lowpass_residual | original_v1_gamma
+residual_eta_max: 0.2
+
+# Diagnostic-only original v1 gamma mode controls.
+gamma_min: 0.05
+gamma_max: 0.95
+gamma_temperature: 3.0
+fixed_gamma: null
+
+# Optional residual/self/prototype modules. Disabled by default.
+use_self_residual: false
+self_residual_max: 0.2
+use_prototype_path: false
+num_prototypes: 16
+prototype_residual_max: 0.2
+
+# Auxiliary losses. Disabled by default.
+lambda_edge_reg: 0.0
+lambda_proto: 0.0
+
+# Debug/export. Existing trainer export hook reads export_node_aux.
+export_aux_stats: false
+export_node_aux: ${model.export_aux_stats}

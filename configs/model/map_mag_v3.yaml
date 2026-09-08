@@ -1,0 +1,68 @@
+name: map_mag_v3
+version: map_mag_v3
+
+hidden_dim: 256
+dropout: 0.2
+norm: layernorm
+
+num_hops: 2
+num_layers: ${model.num_hops}
+restart: 0.15
+diffusion_add_self_loops: true
+full_graph_training: true
+
+# Reliability. single uses reliability for fusion/router without multiplying
+# features; double also scales each modality feature; none sets both gates to 1.
+use_reliability: true
+reliability_min: 0.1
+reliability_mode: single # single | double | none
+
+# Modality-specific sparse semantic graphs.
+use_modality_specific_edges: true
+edge_weight_mode: separate_cos # separate_cos | reliability_scaled | learnable_scalar | shared_avg_cos | raw_uniform
+edge_weight_min: 0.1
+edge_weight_temperature: 2.0
+edge_weight_learnable_init: 1.0
+
+# Propagation. Optional complementary/conflict propagation is disabled in core.
+propagation_mode: modality_specific # modality_specific | shared_fused
+use_conflict_channel: false
+conflict_min: 0.0
+conflict_scale: 1.0
+conflict_eta_max: 0.2
+
+# Node-level modality preference.
+modality_fusion_mode: learned_router # learned_router | reliability_residual | reliability | uniform
+modality_router_temperature: 2.0
+modality_router_residual_scale: 1.0
+modality_router_residual_zero_init: true
+lambda_modality_balance: 0.0
+
+# Controlled attribute/self residual.
+use_self_residual: false
+self_residual_max: 0.1
+
+# Text-specific, visual-specific, and common semantic prototypes.
+use_modality_prototypes: false
+num_text_prototypes: 16
+num_visual_prototypes: 16
+num_common_prototypes: 16
+prototype_residual_max: 0.1
+prototype_temperature: 1.0
+lambda_proto_diversity: 0.0
+prototype_init: random # random | kmeans
+prototype_init_max_samples: 10000
+prototype_init_iters: 20
+prototype_init_batch_size: 4096
+
+# The unified LP protocol always supplies the shared Hadamard decoder.
+lp_pair_operator: null
+
+# Optional semantic-edge regularization.
+lambda_edge_reg: 0.0
+
+# Analysis exports.
+export_aux_stats: false
+export_node_aux: ${model.export_aux_stats}
+export_edge_aux: false
+export_node_predictions: false

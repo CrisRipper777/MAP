@@ -1,0 +1,15 @@
+name: dmgc
+
+# DMGC supervised adaptation (ported from 0901).
+hidden_dim: 128
+num_layers: 1
+dropout: 0.5
+
+# Kept for configuration fidelity; the unified protocol drops InfoNCE losses.
+tau: 1.0
+lambda_cr: 0.001
+lambda_cm: 1.0
+
+# Official model preset used by the reference protocol.
+lr: 5e-3
+weight_decay: 1e-5

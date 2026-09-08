@@ -1,15 +1,44 @@
 name: nc
+protocol_version: unified_full_graph_nc_v1
 
-epochs: 100
-lr: 5e-3
-weight_decay: 1e-5
+# Unified 0901/RPTA-style NC protocol: one full-graph forward per epoch and
+# CE on train nodes only. Set sampled only for an explicit large-graph fallback.
+training_mode: full_graph # full_graph | sampled
+optimizer: adamw # adamw | adam
+
+epochs: 300
+lr: 1e-3
+weight_decay: 1e-4
 batch_size: 1024
 num_neighbors: 15
 inference_mode: full
 inference_batch_size: 4096
 eval_every: 1
-patience: 20
+patience: 30
+early_stop_min_epoch: 30
+early_stop_min_delta: 1e-4
+grad_clip: 1.0
 max_train_batches: null
+
+# Optional best-checkpoint export for offline analysis.
+save_ckpt_path: null
+
+# Optional LR schedule; null keeps the reference constant-LR behavior.
+scheduler: null
+scheduler_warmup_epochs: 10
+scheduler_min_lr: 1.0e-5
 
 loss:
   aux_weight: 1.0
+
+evaluate_test: true
+
+# Optional best-checkpoint test-time modality masking diagnostics.
+eval_modality_masks:
+  enabled: false
+  modes:
+    - mask_text
+    - mask_visual
+    - mask_both_partial
+  partial_ratio: 0.5
+  partial_seed_offset: 100000
