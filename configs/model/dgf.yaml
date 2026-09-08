@@ -1,0 +1,12 @@
+name: dgf
+
+# DGF filtering-core supervised adaptation (ported from 0901).
+hidden_dim: 64
+alpha: 1.0
+beta: 1.0
+num_layers: 10
+dropout: 0.0
+
+# Official model preset used by the reference protocol.
+lr: 5e-3
+weight_decay: 1e-5

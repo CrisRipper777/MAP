@@ -40,7 +40,7 @@ python scripts/make_magb_splits.py
 
 **Models** (`src/models/`):
 - `factory.py`: Dynamic import by name — each model module must export `class Model(cfg, data_info)`.
-- 6 models: `mlp`, `gcn`, `sage`, `mmgcn`, `mgat`, `unigraph2` (each has a config in `configs/model/`).
+- Models include `mlp`, `gcn`, `sage`, `mmgcn`, `mgat`, `unigraph2`, `dip`, `dgf`, `dmgc`, `lgmrec`, `map_mag`, `map_mag_v1`, and `map_mag_v2` (each has a config in `configs/model/`).
 - All encoders implement `forward()` → `(z, None, None, aux_loss, aux_info)` and `inference(x, edge_index, device, batch_size)` for full-graph eval.
 - `predictor.py`: `LinkPredictor` MLP — scores (src, dst) via element-wise product.
 - `common.py`: Shared `make_norm()` (defaults to BatchNorm1d), `get_activation()`.
@@ -61,8 +61,8 @@ python scripts/make_magb_splits.py
 - `mask_token` is a learnable parameter replacing dropped features during training.
 
 **Task runners** (`src/tasks/`):
-- `nc.py`: Model + linear classifier. Metrics: Accuracy, Macro-F1. Early stopping on val accuracy. Gradient clipping `max_norm=1.0`.
-- `lp.py`: Model + `LinkPredictor`. Metrics: MRR, Hits@1/3/10. Early stopping on val MRR. Filtered negative sampling (negatives excluded from all positive edges). Positive label edges excluded from message-passing graph. Gradient clipping `max_norm=1.0`.
+- `nc.py`: Model + linear classifier. The default unified protocol is full-graph training, CE on train nodes, validation-accuracy checkpoint selection, and Accuracy/Macro-F1 evaluation.
+- `lp.py`: Model + `LinkPredictor`. The default unified protocol is sampled training for graph encoders with bidirectional two-hop `LinkNeighborLoader`, filtered negative sampling, positive label edges excluded from the message-passing graph, and MRR/Hits@1/3/10 evaluation with pessimistic ties.
 - Both run `num_runs` independent runs with seeds `seed + run_id`, select best by val metric, evaluate on test.
 - `inference.py`: Two modes — `full` (entire graph on GPU) and `layerwise` (batched via NeighborLoader, memory-efficient).
 

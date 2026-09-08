@@ -72,8 +72,40 @@ def _labels(data: MAGData) -> list[int | str]:
     return [int(value) for value in data.y.cpu().tolist()]
 
 
+def _optional_node_aux_columns(stats: dict[str, torch.Tensor]) -> list[str]:
+    optional = [
+        "lambda_text",
+        "lambda_visual",
+        "eta_residual",
+        "alpha_self",
+        "alpha_text",
+        "alpha_visual",
+        "beta_self",
+        "eta_conflict_text",
+        "eta_conflict_visual",
+    ]
+    return [column for column in optional if column in stats]
+
+
+def _optional_edge_aux_columns(stats: dict[str, torch.Tensor]) -> list[str]:
+    optional = [
+        "edge_weight_text",
+        "edge_weight_visual",
+        "edge_weight_shared",
+    ]
+    return [column for column in optional if column in stats]
+
+
 def should_export_node_aux(cfg, model) -> bool:
     return bool(cfg.model.get("export_node_aux", False)) and hasattr(model, "node_aux_stats")
+
+
+def should_export_edge_aux(cfg, model, task_name: str) -> bool:
+    return (
+        str(task_name).lower() in {"nc", "lp"}
+        and bool(cfg.model.get("export_edge_aux", False))
+        and hasattr(model, "edge_aux_stats")
+    )
 
 
 @torch.no_grad()
@@ -128,6 +160,8 @@ def export_node_aux_stats(
             "text_visual_cosine",
         ]
     )
+    optional_columns = _optional_node_aux_columns(stats)
+    columns.extend(optional_columns)
 
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -159,7 +193,117 @@ def export_node_aux_stats(
                     float(stats["text_visual_cosine"][node_id].item()),
                 ]
             )
+            for column in optional_columns:
+                row.append(float(stats[column][node_id].item()))
             writer.writerow(row)
 
     logger.info("Saved node-level MAP-MAG aux stats [%s]: %s", tag, path)
+    return path
+
+
+@torch.no_grad()
+def export_edge_aux_stats(
+    *,
+    cfg,
+    model,
+    data: MAGData,
+    device: torch.device,
+    output_dir: str | Path,
+    run_id: int,
+    tag: str,
+    task_name: str,
+    logger: logging.Logger,
+) -> Path | None:
+    """Export optional modality-specific weights without changing old CSV schemas."""
+    if not should_export_edge_aux(cfg, model, task_name):
+        return None
+    task_name = str(task_name).lower()
+    if task_name == "nc" and data.y is None:
+        return None
+
+    export_dir = Path(output_dir) / "edge_aux"
+    export_dir.mkdir(parents=True, exist_ok=True)
+    path = export_dir / f"run_{run_id + 1:02d}_{tag}_edge_aux.csv"
+
+    stats = model.edge_aux_stats(data.x, data.edge_index, device=device)
+    labels = data.y.cpu().long() if data.y is not None else None
+    positive_split: list[str] | None = None
+    if task_name == "lp":
+        if data.edge_split is None:
+            return None
+        src = stats["src"].cpu().long()
+        dst = stats["dst"].cpu().long()
+        edge_keys = src * int(data.num_nodes) + dst
+        positive_split = ["none"] * int(edge_keys.numel())
+        undirected = bool(data.edge_split.metadata.get("undirected", True))
+        for split_name, split_dict in (
+            ("test", data.edge_split.test),
+            ("valid", data.edge_split.valid),
+            ("train", data.edge_split.train),
+        ):
+            split_edges = edge_dict_to_index(split_dict).cpu().long()
+            if undirected:
+                split_edges = torch.cat([split_edges, split_edges.flip(0)], dim=1)
+            split_keys = torch.unique(
+                split_edges[0] * int(data.num_nodes) + split_edges[1],
+                sorted=True,
+            )
+            positions = torch.searchsorted(split_keys, edge_keys)
+            in_bounds = positions < split_keys.numel()
+            matches = torch.zeros_like(in_bounds)
+            if bool(in_bounds.any()):
+                matches[in_bounds] = split_keys[positions[in_bounds]] == edge_keys[in_bounds]
+            for edge_id in torch.nonzero(matches, as_tuple=False).view(-1).tolist():
+                positive_split[edge_id] = split_name
+
+    columns = ["src", "dst"]
+    if task_name == "lp":
+        columns.append("positive_split")
+    columns.extend(
+        [
+            "label_src",
+            "label_dst",
+            "same_label",
+            "cos_text",
+            "cos_visual",
+            "edge_weight",
+        ]
+    )
+    optional_columns = _optional_edge_aux_columns(stats)
+    columns.extend(optional_columns)
+    columns.extend(["src_degree", "dst_degree"])
+
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(columns)
+        for edge_id in range(int(stats["src"].numel())):
+            src = int(stats["src"][edge_id].item())
+            dst = int(stats["dst"][edge_id].item())
+            label_src = int(labels[src].item()) if labels is not None else ""
+            label_dst = int(labels[dst].item()) if labels is not None else ""
+            same_label = int(label_src == label_dst) if labels is not None else ""
+            row: list[int | float | str] = [src, dst]
+            if positive_split is not None:
+                row.append(positive_split[edge_id])
+            row.extend(
+                [
+                    label_src,
+                    label_dst,
+                    same_label,
+                    float(stats["cos_text"][edge_id].item()),
+                    float(stats["cos_visual"][edge_id].item()),
+                    float(stats["edge_weight"][edge_id].item()),
+                ]
+            )
+            for column in optional_columns:
+                row.append(float(stats[column][edge_id].item()))
+            row.extend(
+                [
+                    float(stats["src_degree"][edge_id].item()),
+                    float(stats["dst_degree"][edge_id].item()),
+                ]
+            )
+            writer.writerow(row)
+
+    logger.info("Saved edge-level MAP-MAG aux stats [%s]: %s", tag, path)
     return path

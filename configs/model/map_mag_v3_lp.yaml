@@ -1,0 +1,12 @@
+defaults:
+  - map_mag_v3
+  - _self_
+
+name: map_mag_v3
+version: map_mag_v3_lp
+use_conflict_channel: true
+use_self_residual: true
+edge_weight_mode: separate_cos
+modality_fusion_mode: learned_router
+# Encoder preset only: decoder capacity remains identical for every LP model.
+lp_pair_operator: null

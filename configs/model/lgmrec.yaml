@@ -1,0 +1,13 @@
+name: lgmrec
+
+# LGMRec (RecSys 2024), ported from 0901/OpenMAG.
+# Unified protocol: plain CE/BCE only; no modality InfoNCE auxiliary loss.
+hidden_dim: 128
+num_layers: 3
+dropout: 0.2
+hyper_num: 64
+alpha: 0.1
+
+# Official model preset used by the reference protocol.
+lr: 5e-3
+weight_decay: 1e-5

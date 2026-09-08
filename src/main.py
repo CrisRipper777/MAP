@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -8,6 +9,7 @@ if __package__ is None or __package__ == "":
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import hydra
+import torch
 from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, OmegaConf
 
@@ -15,6 +17,14 @@ from src.data import load_mag_data
 from src.tasks import run_lp, run_nc
 from src.utils.device import get_device
 from src.utils.logging import setup_logger
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _log_data_info(logger, data, model_name: str) -> None:
@@ -46,6 +56,10 @@ def _log_data_info(logger, data, model_name: str) -> None:
         )
     for key, value in data.info.items():
         logger.info("%s: %s", key, value)
+        if key.endswith("split_path"):
+            split_path = Path(str(value))
+            if split_path.is_file():
+                logger.info("%s_sha256: %s", key, _sha256_file(split_path))
 
 
 @hydra.main(config_path="../configs", config_name="config", version_base=None)
@@ -55,6 +69,9 @@ def main(cfg: DictConfig) -> None:
     logger.info("Resolved config:\n%s", OmegaConf.to_yaml(cfg, resolve=True))
 
     device = get_device(str(cfg.device))
+    torch_threads = cfg.task.get("torch_threads")
+    if torch_threads is not None:
+        torch.set_num_threads(int(torch_threads))
     logger.info("Device: %s", device)
 
     data = load_mag_data(cfg, str(cfg.task.name), int(cfg.seed))

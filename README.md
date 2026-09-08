@@ -9,7 +9,10 @@ It only supports:
 
 It uses frozen features from `../data` and does not train BERT, ViT, CLIP, Qwen-VL, or other large encoders.
 
-Implemented models: `mlp`, `gcn`, `sage`, `mmgcn`, `mgat`, `unigraph2`, `dip`, `map_mag`, `map_mag_v1`.
+The frozen NC/LP experiment contract is documented in
+[`docs/unified_training_evaluation_protocol.md`](docs/unified_training_evaluation_protocol.md).
+
+Implemented models: `mlp`, `gcn`, `sage`, `mmgcn`, `mgat`, `dip`, `dgf`, `dmgc`, `lgmrec`, `map_mag`, `map_mag_v1`, `map_mag_v2`, `map_mag_v3`.
 
 ## Datasets
 
@@ -56,11 +59,61 @@ python -m src.main dataset=ele-fashion task=nc model=dip num_runs=3
 python -m src.main dataset=sports-copurchase task=lp model=dip num_runs=3
 ```
 
+Run the 0901/RPTA baseline models:
+
+```bash
+python -m src.main dataset=Movies task=nc model=dgf num_runs=3
+python -m src.main dataset=Movies task=nc model=dmgc num_runs=3
+python -m src.main dataset=Movies task=nc model=lgmrec num_runs=3
+python -m src.main dataset=sports-copurchase task=lp model=dgf num_runs=3
+python -m src.main dataset=sports-copurchase task=lp model=dmgc num_runs=3
+python -m src.main dataset=sports-copurchase task=lp model=lgmrec num_runs=3
+```
+
 Run frozen MAP-MAG v1:
 
 ```bash
 python -m src.main dataset=Movies task=nc model=map_mag_v1 num_runs=3
 python -m src.main dataset=sports-copurchase task=lp model=map_mag_v1 num_runs=3
+```
+
+Run MAP-MAG v3 core and controlled variants:
+
+```bash
+python -m src.main dataset=Movies task=nc model=map_mag_v3 num_runs=3
+python -m src.main dataset=Movies task=nc model=map_mag_v3_full num_runs=3
+python -m src.main dataset=sports-copurchase task=lp model=map_mag_v3_lp num_runs=3
+```
+
+`map_mag_v3` is the stable dual-semantic-graph core. `map_mag_v3_full` also
+enables conflict propagation, self residuals, and modality-specific
+prototypes. `map_mag_v3_lp` enables conflict propagation and the self
+residual, but still uses the shared Hadamard LP decoder required by the
+unified protocol. See
+[`docs/map_mag_family_comparison.md`](docs/map_mag_family_comparison.md).
+
+Run the complete main benchmark (all implemented models, 5 NC datasets with
+three seeds, and sports-copurchase LP with one seed):
+
+```bash
+python scripts/run_full_benchmark.py
+```
+
+The launcher uses one process per device, so the default `cuda:0 cuda:1`
+setting runs two jobs in parallel without sharing a GPU. Use
+`--devices cuda:0` for single-card execution. Every job has a unique output
+directory under `outputs/full_benchmark/`; completed jobs are skipped on a
+rerun, and `benchmark_manifest.json` / `benchmark_summary.json` record the
+plan and status. Inspect commands first with `--dry-run`. The optional
+`--include-v3-full` adds the controlled v3 ablation; it is not part of the
+main-model list.
+
+For a short smoke run, append Hydra overrides after `--`, for example:
+
+```bash
+python scripts/run_full_benchmark.py --only nc --models map_mag_v2 map_mag_v3 \
+  --nc-datasets Movies --devices cuda:0 --output-root outputs/benchmark_smoke \
+  -- task.epochs=1 task.patience=1 model.export_node_aux=false
 ```
 
 Run the MAP-MAG v1 core ablations on Movies-NC, Toys-NC, sports-copurchase-LP, and ele-fashion-NC:
@@ -116,10 +169,13 @@ python -m src.main dataset=Movies task=nc model=mlp num_runs=1 task.epochs=1 tas
 - MAGB NC/LP splits are generated once under `../data/MAGB_split` when missing.
 - MM-Graph NC/LP tasks use the official split files shipped in each dataset directory.
 - LP evaluation ranks one positive target against fixed negative targets and reports MRR / Hits@1 / Hits@3 / Hits@10.
+- NC uses the unified full-graph training protocol by default: one graph forward per epoch, CE on train nodes, validation-accuracy checkpoint selection, and one final test evaluation.
+- LP uses the unified sampled protocol: graph encoders use bidirectional two-hop `LinkNeighborLoader` sampling with one filtered negative per positive; the shared LP projection dimension is 128 and equal-score negatives use pessimistic ranking.
 - Test metrics are computed once after training, by reloading the best validation checkpoint.
 - Dataset graphs do not add self-loops by default; models own their self-loop policy, e.g. GCN adds them internally.
 - `model=mlp` does not use graph sampling: NC uses node mini-batches and LP uses edge mini-batches.
 - GNN models such as `gcn` and `sage` use PyG `NeighborLoader` / `LinkNeighborLoader`.
-- `model=dip` trains with full-graph message passing by default (`model.full_graph_training=true`) so pseudo nodes aggregate graph-level modality context rather than sampled subgraphs. LP still uses edge-label mini-batches and removes the current positive labels from the full message graph.
+- NC always uses full-graph training. LP always uses the unified sampled protocol, so global encoders such as `dip` and `map_mag_v2` are explicitly evaluated as sampled adaptations even if their model config advertises a native full-graph preference.
 - `model=dip` implements the exact DiP global pseudo-node recurrence; its `layerwise` inference API currently falls back to the exact full-graph DiP pass because pseudo-node states depend on all nodes at each recurrent step.
 - `model=map_mag_v1` exports node-level analysis CSVs by default under each Hydra run directory: `node_aux/run_XX_best_val_node_aux.csv` and `node_aux/run_XX_final_epoch_node_aux.csv`. Disable with `model.export_node_aux=false`.
+- `model=dgf`, `model=dmgc`, and `model=lgmrec` are ported from `/hdd1/DataInHere/YHF/0901/0901` and use the same supervised CE/BCE task runners as the other encoders; their model-specific optimizer presets live in `configs/model/`.

@@ -13,14 +13,16 @@ from sklearn.metrics import f1_score
 from src.data import MAGData
 from src.models import build_model
 from src.tasks.common import (
+    build_optimizer,
     clone_state_dict,
     format_aux_info_stats,
     load_state_dict_cpu,
     resolve_num_neighbors,
+    scheduler_step,
     summarize_aux_info_stats,
     update_aux_info_stats,
 )
-from src.tasks.analysis import export_node_aux_stats
+from src.tasks.analysis import export_edge_aux_stats, export_node_aux_stats
 from src.tasks.inference import infer_all_embeddings, resolve_inference_mode
 from src.tasks.modality import iter_masked_data, modality_drop_key, modality_mask_key, modality_mask_eval_enabled
 from src.tasks.prototype_analysis import export_node_prototype_stats
@@ -33,10 +35,14 @@ def _uses_graph_encoder(cfg) -> bool:
     return str(cfg.model.name).lower() != "mlp"
 
 
-def _uses_full_graph_training(model, cfg) -> bool:
-    if "full_graph_training" in cfg.model:
-        return bool(cfg.model.full_graph_training)
-    return bool(getattr(model, "requires_full_graph_training", False))
+def _resolve_training_mode(cfg, model) -> str:
+    """Use the 0901 NC protocol: full graph by default."""
+    if getattr(model, "requires_full_graph_training", False):
+        return "full_graph"
+    mode = str(cfg.task.get("training_mode", "full_graph")).strip().lower()
+    if mode not in {"full_graph", "sampled"}:
+        raise ValueError(f"task.training_mode must be full_graph|sampled, got {mode!r}")
+    return mode
 
 
 @torch.no_grad()
@@ -123,15 +129,16 @@ def _run_single_nc(
         "visual_dim": int(data.x_i.shape[1]) if data.x_i is not None else 0,
     }
     model = build_model(cfg, data_info).to(device)
+    if hasattr(model, "initialize_prototypes"):
+        initialized = model.initialize_prototypes(data.x, device=device, seed=seed)
+        if initialized:
+            logger.info("Initialized modality prototypes with K-means from frozen node features")
     classifier = nn.Linear(model.out_dim, int(data.num_classes)).to(device)
-    optimizer = torch.optim.Adam(
-        list(model.parameters()) + list(classifier.parameters()),
-        lr=float(cfg.task.lr),
-        weight_decay=float(cfg.task.weight_decay),
-    )
+    optimizer = build_optimizer(list(model.parameters()) + list(classifier.parameters()), cfg, model=model)
     criterion = nn.CrossEntropyLoss()
     uses_graph = _uses_graph_encoder(cfg)
-    full_graph_training = uses_graph and _uses_full_graph_training(model, cfg)
+    training_mode = _resolve_training_mode(cfg, model)
+    full_graph_training = training_mode == "full_graph"
 
     num_neighbors = None
     if full_graph_training:
@@ -157,7 +164,7 @@ def _run_single_nc(
         loader_name = "NodeDataLoader"
     x_all = data.x.to(device) if (not uses_graph or full_graph_training) else None
     y_all = data.y.to(device) if (not uses_graph or full_graph_training) else None
-    edge_index_all = data.edge_index.to(device) if full_graph_training else None
+    edge_index_all = data.edge_index.to(device) if (uses_graph and full_graph_training) else None
     train_idx_all = data.train_idx.to(device) if full_graph_training else None
 
     logger.info(
@@ -168,8 +175,9 @@ def _run_single_nc(
         count_parameters(model) + count_parameters(classifier),
     )
     logger.info("Loader: %s", loader_name)
+    logger.info("Protocol: %s", str(cfg.task.get("protocol_version", "unified_full_graph_nc_v1")))
     if full_graph_training:
-        logger.info("Train full graph: enabled for global pseudo-node pathways")
+        logger.info("Train full graph: enabled by the unified NC protocol")
     elif uses_graph:
         logger.info("Train neighbor sampling: %s", num_neighbors)
     logger.info("Inference mode: %s", inference_mode)
@@ -181,8 +189,13 @@ def _run_single_nc(
     best_head_state = None
     patience_total = int(cfg.task.patience)
     patience_left = patience_total
+    early_stop_min_epoch = int(cfg.task.get("early_stop_min_epoch", 1))
+    early_stop_min_delta = float(cfg.task.get("early_stop_min_delta", 0.0))
+    grad_clip = cfg.task.get("grad_clip")
+    aux_weight = float(cfg.task.loss.aux_weight)
     max_train_batches = cfg.task.get("max_train_batches")
     inference_batch_size = int(cfg.task.inference_batch_size)
+    evaluate_test = bool(cfg.task.get("evaluate_test", True))
 
     for epoch in range(1, int(cfg.task.epochs) + 1):
         model.train()
@@ -198,11 +211,12 @@ def _run_single_nc(
             z, _, _, aux_loss, aux_info = model(x_all, edge_index_all)
             labels = y_all[train_idx_all]
             logits = classifier(z[train_idx_all])
-            loss = criterion(logits, labels) + float(cfg.task.loss.aux_weight) * aux_loss
+            loss = criterion(logits, labels) + aux_weight * aux_loss
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(
-                list(model.parameters()) + list(classifier.parameters()), max_norm=1.0
-            )
+            if grad_clip is not None:
+                torch.nn.utils.clip_grad_norm_(
+                    list(model.parameters()) + list(classifier.parameters()), max_norm=float(grad_clip)
+                )
             optimizer.step()
             total_loss += float(loss.item()) * int(labels.numel())
             total_examples += int(labels.numel())
@@ -226,11 +240,12 @@ def _run_single_nc(
                     labels = y_all[batch_idx]
                     z, _, _, aux_loss, aux_info = model(x_batch, None)
                     logits = classifier(z)
-                loss = criterion(logits, labels) + float(cfg.task.loss.aux_weight) * aux_loss
+                loss = criterion(logits, labels) + aux_weight * aux_loss
                 loss.backward()
-                torch.nn.utils.clip_grad_norm_(
-                    list(model.parameters()) + list(classifier.parameters()), max_norm=1.0
-                )
+                if grad_clip is not None:
+                    torch.nn.utils.clip_grad_norm_(
+                        list(model.parameters()) + list(classifier.parameters()), max_norm=float(grad_clip)
+                    )
                 optimizer.step()
                 total_loss += float(loss.item()) * int(labels.numel())
                 total_examples += int(labels.numel())
@@ -240,6 +255,7 @@ def _run_single_nc(
 
         train_loss = total_loss / max(total_examples, 1)
         aux_stats = summarize_aux_info_stats(aux_sums, aux_counts)
+        scheduler_step(cfg, optimizer, epoch, int(cfg.task.epochs))
         if epoch % int(cfg.task.eval_every) != 0:
             logger.info("Epoch %05d | Train Loss %.4f", epoch, train_loss)
             if aux_stats:
@@ -258,7 +274,7 @@ def _run_single_nc(
         )
 
         stop_early = False
-        if val_metrics["acc"] > best_val:
+        if val_metrics["acc"] > best_val + early_stop_min_delta:
             best_val = val_metrics["acc"]
             best_test = {
                 "val_acc": val_metrics["acc"],
@@ -267,7 +283,7 @@ def _run_single_nc(
             best_model_state = clone_state_dict(model)
             best_head_state = clone_state_dict(classifier)
             patience_left = patience_total
-        else:
+        elif epoch >= early_stop_min_epoch:
             patience_left -= 1
             patience_used = patience_total - patience_left
             logger.info("Patience %d/%d | Best Val Acc %.2f", patience_used, patience_total, format_pct(best_val))
@@ -281,6 +297,17 @@ def _run_single_nc(
 
     if output_dir is not None:
         export_node_aux_stats(
+            cfg=cfg,
+            model=model,
+            data=data,
+            device=device,
+            output_dir=output_dir,
+            run_id=run_id,
+            tag="final_epoch",
+            task_name="nc",
+            logger=logger,
+        )
+        export_edge_aux_stats(
             cfg=cfg,
             model=model,
             data=data,
@@ -322,6 +349,17 @@ def _run_single_nc(
                 task_name="nc",
                 logger=logger,
             )
+            export_edge_aux_stats(
+                cfg=cfg,
+                model=model,
+                data=data,
+                device=device,
+                output_dir=output_dir,
+                run_id=run_id,
+                tag="best_val",
+                task_name="nc",
+                logger=logger,
+            )
             export_node_prototype_stats(
                 cfg=cfg,
                 model=model,
@@ -337,68 +375,90 @@ def _run_single_nc(
                 inference_batch_size=inference_batch_size,
                 inference_mode=inference_mode,
             )
-        z = infer_all_embeddings(model, data, device, uses_graph, inference_batch_size, inference_mode)
-        test_metrics = _evaluate_split(classifier, z, data.y, data.test_idx, device, inference_batch_size)
-        best_test["test_acc"] = test_metrics["acc"]
-        best_test["test_macro_f1"] = test_metrics["macro_f1"]
-        del z
-        best_test.update(
-            _evaluate_modality_masks(
-                cfg,
-                model,
-                classifier,
-                data,
-                device,
-                uses_graph,
-                inference_mode,
-                inference_batch_size,
-                seed,
-                best_test,
-                logger,
+        if evaluate_test:
+            z = infer_all_embeddings(model, data, device, uses_graph, inference_batch_size, inference_mode)
+            test_metrics = _evaluate_split(classifier, z, data.y, data.test_idx, device, inference_batch_size)
+            best_test["test_acc"] = test_metrics["acc"]
+            best_test["test_macro_f1"] = test_metrics["macro_f1"]
+            del z
+            best_test.update(
+                _evaluate_modality_masks(
+                    cfg,
+                    model,
+                    classifier,
+                    data,
+                    device,
+                    uses_graph,
+                    inference_mode,
+                    inference_batch_size,
+                    seed,
+                    best_test,
+                    logger,
+                )
             )
-        )
 
     if not best_test:
         z = infer_all_embeddings(model, data, device, uses_graph, inference_batch_size, inference_mode)
         val_metrics = _evaluate_split(classifier, z, data.y, data.val_idx, device, inference_batch_size)
-        test_metrics = _evaluate_split(classifier, z, data.y, data.test_idx, device, inference_batch_size)
         best_test = {
-            "test_acc": test_metrics["acc"],
-            "test_macro_f1": test_metrics["macro_f1"],
             "val_acc": val_metrics["acc"],
             "val_macro_f1": val_metrics["macro_f1"],
         }
+        if evaluate_test:
+            test_metrics = _evaluate_split(classifier, z, data.y, data.test_idx, device, inference_batch_size)
+            best_test["test_acc"] = test_metrics["acc"]
+            best_test["test_macro_f1"] = test_metrics["macro_f1"]
         del z
-        best_test.update(
-            _evaluate_modality_masks(
-                cfg,
-                model,
-                classifier,
-                data,
-                device,
-                uses_graph,
-                inference_mode,
-                inference_batch_size,
-                seed,
-                best_test,
-                logger,
+        if evaluate_test:
+            best_test.update(
+                _evaluate_modality_masks(
+                    cfg,
+                    model,
+                    classifier,
+                    data,
+                    device,
+                    uses_graph,
+                    inference_mode,
+                    inference_batch_size,
+                    seed,
+                    best_test,
+                    logger,
+                )
             )
-        )
 
     if hasattr(model, "_batch_n_id"):
         model._batch_n_id = None
+
+    save_ckpt_path = cfg.task.get("save_ckpt_path")
+    if save_ckpt_path:
+        path = Path(str(save_ckpt_path))
+        if int(cfg.num_runs) > 1:
+            path = path.with_name(f"{path.stem}_run{run_id + 1}{path.suffix}")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(
+            {
+                "task": "nc",
+                "seed": seed,
+                "model_state": clone_state_dict(model),
+                "head_state": clone_state_dict(classifier),
+                "data_info": data_info,
+            },
+            path,
+        )
+        logger.info("Saved checkpoint: %s", path)
 
     logger.info(
         "[Run %d] Best Val Acc %.2f",
         run_id + 1,
         format_pct(best_test["val_acc"]),
     )
-    logger.info(
-        "[Run %d] Final Test Acc %.2f | Final Test F1 %.2f",
-        run_id + 1,
-        format_pct(best_test["test_acc"]),
-        format_pct(best_test["test_macro_f1"]),
-    )
+    if evaluate_test:
+        logger.info(
+            "[Run %d] Final Test Acc %.2f | Final Test F1 %.2f",
+            run_id + 1,
+            format_pct(best_test["test_acc"]),
+            format_pct(best_test["test_macro_f1"]),
+        )
     return best_test
 
 
@@ -409,30 +469,31 @@ def run_nc(
     logger: logging.Logger,
     output_dir: str | Path | None = None,
 ) -> dict[str, tuple[float, float]]:
-    if data.y is None or data.train_idx is None or data.val_idx is None or data.test_idx is None:
-        raise ValueError("NC data must contain y/train_idx/val_idx/test_idx")
+    evaluate_test = bool(cfg.task.get("evaluate_test", True))
+    if data.y is None or data.train_idx is None or data.val_idx is None:
+        raise ValueError("NC data must contain y/train_idx/val_idx")
+    if evaluate_test and data.test_idx is None:
+        raise ValueError("NC data must contain test_idx when task.evaluate_test=true")
 
     run_results = [
         _run_single_nc(cfg, data, device, logger, run_id, output_dir)
         for run_id in range(int(cfg.num_runs))
     ]
-    test_acc = [item["test_acc"] for item in run_results]
-    test_f1 = [item["test_macro_f1"] for item in run_results]
     val_acc = [item["val_acc"] for item in run_results]
     val_mean, val_std = mean_std(val_acc)
-    acc_mean, acc_std = mean_std(test_acc)
-    f1_mean, f1_std = mean_std(test_f1)
     logger.info("============================================================")
     logger.info("Final Results over %d runs", int(cfg.num_runs))
     logger.info("============================================================")
     logger.info("Highest Valid Acc: %.2f ± %.2f", format_pct(val_mean), format_pct(val_std))
-    logger.info("Test Acc: %.2f ± %.2f", format_pct(acc_mean), format_pct(acc_std))
-    logger.info("Test Macro-F1: %.2f ± %.2f", format_pct(f1_mean), format_pct(f1_std))
-    output = {
-        "val_acc": (val_mean, val_std),
-        "test_acc": (acc_mean, acc_std),
-        "test_macro_f1": (f1_mean, f1_std),
-    }
+    output = {"val_acc": (val_mean, val_std)}
+    if evaluate_test:
+        test_acc = [item["test_acc"] for item in run_results]
+        test_f1 = [item["test_macro_f1"] for item in run_results]
+        acc_mean, acc_std = mean_std(test_acc)
+        f1_mean, f1_std = mean_std(test_f1)
+        logger.info("Test Acc: %.2f ± %.2f", format_pct(acc_mean), format_pct(acc_std))
+        logger.info("Test Macro-F1: %.2f ± %.2f", format_pct(f1_mean), format_pct(f1_std))
+        output.update({"test_acc": (acc_mean, acc_std), "test_macro_f1": (f1_mean, f1_std)})
     primary_keys = set(output)
     for key in sorted(set().union(*(item.keys() for item in run_results)) - primary_keys - {"val_macro_f1"}):
         values = [item[key] for item in run_results if key in item]
