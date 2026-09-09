@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch_geometric.nn.conv.gcn_conv import gcn_norm
 from torch_geometric.utils import scatter
 
@@ -91,6 +92,55 @@ class RestartDiffusion(nn.Module):
             self.num_hops,
             self.restart,
         )
+
+
+class OwnershipEdgeScorer(nn.Module):
+    """Shared static scorer for ownership-conditioned original graph edges."""
+
+    NUM_FACTORS = 3
+
+    def __init__(self, factor_dim: int = 128, score_hidden_dim: int = 64) -> None:
+        super().__init__()
+        self.factor_dim = int(factor_dim)
+        self.score_hidden_dim = int(score_hidden_dim)
+        if self.factor_dim <= 0 or self.score_hidden_dim <= 0:
+            raise ValueError(
+                "OwnershipEdgeScorer dimensions must be positive, got "
+                f"factor_dim={factor_dim}, score_hidden_dim={score_hidden_dim}"
+            )
+        self.query = nn.Linear(self.factor_dim, self.score_hidden_dim, bias=False)
+        self.key = nn.Linear(self.factor_dim, self.score_hidden_dim, bias=False)
+        self.ownership_embedding = nn.Parameter(
+            torch.empty(self.NUM_FACTORS, self.score_hidden_dim)
+        )
+        self.score_out = nn.Linear(self.score_hidden_dim, 1, bias=True)
+        nn.init.normal_(self.ownership_embedding, mean=0.0, std=0.02)
+        # Zero output layer makes every initial composition weight exactly one.
+        nn.init.zeros_(self.score_out.weight)
+        nn.init.zeros_(self.score_out.bias)
+
+    def forward(self, ownership0: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
+        """Return ``[E, 3]`` scores for original edges ``src=j, dst=i``."""
+        if ownership0.dim() != 3 or ownership0.size(1) != self.NUM_FACTORS:
+            raise ValueError(
+                "ownership0 must have shape [N, 3, factor_dim], got "
+                f"{tuple(ownership0.shape)}"
+            )
+        if ownership0.size(-1) != self.factor_dim:
+            raise ValueError(
+                f"ownership0 factor dimension must be {self.factor_dim}, "
+                f"got {ownership0.size(-1)}"
+            )
+        if edge_index.numel() == 0:
+            return ownership0.new_empty((0, self.NUM_FACTORS))
+
+        src, dst = edge_index
+        query = self.query(ownership0[dst])
+        query = query + self.ownership_embedding.to(dtype=query.dtype).unsqueeze(0)
+        key = self.key(ownership0[src])
+        hidden = F.gelu(query + key)
+        scores = self.score_out(hidden).squeeze(-1)
+        return scores
 
 
 class ModalityProjector(nn.Module):

@@ -1,0 +1,2864 @@
+{
+  "Movies/seed42/comp_uniform": {
+    "variant": "comp_uniform",
+    "edge_count": 160802,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 59424,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      },
+      "val": {
+        "edge_count": 6174,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      160802,
+      3,
+      64
+    ],
+    "forward_time_ms": 22.6832719927188,
+    "peak_gpu_memory_mb": 819.30615234375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Movies/seed42/comp_shared": {
+    "variant": "comp_shared",
+    "edge_count": 160802,
+    "factor_weights": {
+      "C": {
+        "mean": 0.8050416111946106,
+        "std": 0.060778941959142685,
+        "cv": 0.07549788869789241,
+        "min": 0.5961233377456665,
+        "max": 0.9953285455703735,
+        "fraction_lt_0_75": 0.1930386437979627,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.8050416111946106,
+        "std": 0.060778941959142685,
+        "cv": 0.07549788869789241,
+        "min": 0.5961233377456665,
+        "max": 0.9953285455703735,
+        "fraction_lt_0_75": 0.1930386437979627,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 0.8050416111946106,
+        "std": 0.060778941959142685,
+        "cv": 0.07549788869789241,
+        "min": 0.5961233377456665,
+        "max": 0.9953285455703735,
+        "fraction_lt_0_75": 0.1930386437979627,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.9999999999999999,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": 0.9999999999999999,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": 0.9999999999999999,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 59424,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.8087584972381592,
+            "different_label_mean_weight": 0.8035256266593933,
+            "auc_weight_to_same_label": 0.5229642313154383
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.8087584972381592,
+            "different_label_mean_weight": 0.8035256266593933,
+            "auc_weight_to_same_label": 0.5229642313154383
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.8087584972381592,
+            "different_label_mean_weight": 0.8035256266593933,
+            "auc_weight_to_same_label": 0.5229642313154383
+          }
+        }
+      },
+      "val": {
+        "edge_count": 6174,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.8050788640975952,
+            "different_label_mean_weight": 0.8009003400802612,
+            "auc_weight_to_same_label": 0.5191661351622169
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.8050788640975952,
+            "different_label_mean_weight": 0.8009003400802612,
+            "auc_weight_to_same_label": 0.5191661351622169
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.8050788640975952,
+            "different_label_mean_weight": 0.8009003400802612,
+            "auc_weight_to_same_label": 0.5191661351622169
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      160802,
+      3,
+      64
+    ],
+    "forward_time_ms": 23.053145996527746,
+    "peak_gpu_memory_mb": 821.42724609375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Movies/seed42/comp_ownership": {
+    "variant": "comp_ownership",
+    "edge_count": 160802,
+    "factor_weights": {
+      "C": {
+        "mean": 0.604970395565033,
+        "std": 0.043550897389650345,
+        "cv": 0.07198847697162848,
+        "min": 0.517223596572876,
+        "max": 0.8127008676528931,
+        "fraction_lt_0_75": 0.9968408353129936,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.9371842741966248,
+        "std": 0.09859266132116318,
+        "cv": 0.10520093436872807,
+        "min": 0.590936005115509,
+        "max": 1.1558037996292114,
+        "fraction_lt_0_75": 0.049078991554831405,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 0.8878170847892761,
+        "std": 0.13108621537685394,
+        "cv": 0.14765002568965804,
+        "min": 0.5281581878662109,
+        "max": 1.2808301448822021,
+        "fraction_lt_0_75": 0.16104277309983706,
+        "fraction_gt_1_25": 0.0002238778124650191,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.41492939825920017,
+        "spearman": 0.42889713272607355,
+        "mean_absolute_difference": 0.33222052454948425
+      },
+      "C_Pv": {
+        "pearson": -0.15787710196549676,
+        "spearman": -0.14094553998285783,
+        "mean_absolute_difference": 0.28490063548088074
+      },
+      "Pt_Pv": {
+        "pearson": 0.03355369476832191,
+        "spearman": 0.0371385506242055,
+        "mean_absolute_difference": 0.13621707260608673
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 59424,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.5984376072883606,
+            "different_label_mean_weight": 0.6102821230888367,
+            "auc_weight_to_same_label": 0.4113383132706192
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9403296113014221,
+            "different_label_mean_weight": 0.9332015514373779,
+            "auc_weight_to_same_label": 0.5182172823835279
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.8984782695770264,
+            "different_label_mean_weight": 0.8802803754806519,
+            "auc_weight_to_same_label": 0.5361934578862855
+          }
+        }
+      },
+      "val": {
+        "edge_count": 6174,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.5986126661300659,
+            "different_label_mean_weight": 0.6124482154846191,
+            "auc_weight_to_same_label": 0.3999777975133215
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9403523206710815,
+            "different_label_mean_weight": 0.9385703802108765,
+            "auc_weight_to_same_label": 0.5000466389860844
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.8943260312080383,
+            "different_label_mean_weight": 0.8806111812591553,
+            "auc_weight_to_same_label": 0.5300927337624332
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      160802,
+      3,
+      64
+    ],
+    "forward_time_ms": 22.484702989459038,
+    "peak_gpu_memory_mb": 718.74365234375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Movies/seed43/comp_uniform": {
+    "variant": "comp_uniform",
+    "edge_count": 160802,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 59408,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      },
+      "val": {
+        "edge_count": 6014,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      160802,
+      3,
+      64
+    ],
+    "forward_time_ms": 21.938449004665017,
+    "peak_gpu_memory_mb": 819.8818359375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Movies/seed43/comp_shared": {
+    "variant": "comp_shared",
+    "edge_count": 160802,
+    "factor_weights": {
+      "C": {
+        "mean": 0.6724158525466919,
+        "std": 0.07594571262598038,
+        "cv": 0.11294456003430821,
+        "min": 0.513787031173706,
+        "max": 1.0148282051086426,
+        "fraction_lt_0_75": 0.825145209636696,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.6724158525466919,
+        "std": 0.07594571262598038,
+        "cv": 0.11294456003430821,
+        "min": 0.513787031173706,
+        "max": 1.0148282051086426,
+        "fraction_lt_0_75": 0.825145209636696,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 0.6724158525466919,
+        "std": 0.07594571262598038,
+        "cv": 0.11294456003430821,
+        "min": 0.513787031173706,
+        "max": 1.0148282051086426,
+        "fraction_lt_0_75": 0.825145209636696,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 1.0,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": 1.0,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": 1.0,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 59408,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.6742580533027649,
+            "different_label_mean_weight": 0.6730705499649048,
+            "auc_weight_to_same_label": 0.5027556886922325
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.6742580533027649,
+            "different_label_mean_weight": 0.6730705499649048,
+            "auc_weight_to_same_label": 0.5027556886922325
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.6742580533027649,
+            "different_label_mean_weight": 0.6730705499649048,
+            "auc_weight_to_same_label": 0.5027556886922325
+          }
+        }
+      },
+      "val": {
+        "edge_count": 6014,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.675273060798645,
+            "different_label_mean_weight": 0.6679086089134216,
+            "auc_weight_to_same_label": 0.5275788523436509
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.675273060798645,
+            "different_label_mean_weight": 0.6679086089134216,
+            "auc_weight_to_same_label": 0.5275788523436509
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.675273060798645,
+            "different_label_mean_weight": 0.6679086089134216,
+            "auc_weight_to_same_label": 0.5275788523436509
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      160802,
+      3,
+      64
+    ],
+    "forward_time_ms": 22.44339801836759,
+    "peak_gpu_memory_mb": 821.42724609375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Movies/seed43/comp_ownership": {
+    "variant": "comp_ownership",
+    "edge_count": 160802,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0098116397857666,
+        "std": 0.048001158982515335,
+        "cv": 0.04753476499112139,
+        "min": 0.8290671110153198,
+        "max": 1.1972270011901855,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.9438977241516113,
+        "std": 0.21620887517929077,
+        "cv": 0.22905964242431284,
+        "min": 0.5178697109222412,
+        "max": 1.3521709442138672,
+        "fraction_lt_0_75": 0.24290742652454572,
+        "fraction_gt_1_25": 0.05829529483464136,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 0.6940715312957764,
+        "std": 0.13085772097110748,
+        "cv": 0.18853636126928663,
+        "min": 0.5080781579017639,
+        "max": 1.3666198253631592,
+        "fraction_lt_0_75": 0.7266638474645838,
+        "fraction_gt_1_25": 0.0006654146092710289,
+        "fraction_near_lower": 3.109414062014154e-05,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": -0.0005194470684716237,
+        "spearman": 0.014116827053406078,
+        "mean_absolute_difference": 0.19675011932849884
+      },
+      "C_Pv": {
+        "pearson": 0.11142952450689864,
+        "spearman": 0.08108978162761891,
+        "mean_absolute_difference": 0.31982681155204773
+      },
+      "Pt_Pv": {
+        "pearson": 0.07686420611334652,
+        "spearman": 0.07648651435809897,
+        "mean_absolute_difference": 0.2906019985675812
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 59408,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0020573139190674,
+            "different_label_mean_weight": 1.0166517496109009,
+            "auc_weight_to_same_label": 0.41749807869630573
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9478312134742737,
+            "different_label_mean_weight": 0.9388582706451416,
+            "auc_weight_to_same_label": 0.5104653524632832
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.6929961442947388,
+            "different_label_mean_weight": 0.6978815197944641,
+            "auc_weight_to_same_label": 0.4913582326767937
+          }
+        }
+      },
+      "val": {
+        "edge_count": 6014,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0003454685211182,
+            "different_label_mean_weight": 1.0140702724456787,
+            "auc_weight_to_same_label": 0.42302029412887043
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9711405634880066,
+            "different_label_mean_weight": 0.9343721270561218,
+            "auc_weight_to_same_label": 0.5454822523434734
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.6827366948127747,
+            "different_label_mean_weight": 0.6935533285140991,
+            "auc_weight_to_same_label": 0.4832584640587547
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      160802,
+      3,
+      64
+    ],
+    "forward_time_ms": 22.65951901790686,
+    "peak_gpu_memory_mb": 718.74365234375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Movies/seed44/comp_uniform": {
+    "variant": "comp_uniform",
+    "edge_count": 160802,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 56924,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      },
+      "val": {
+        "edge_count": 6722,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      160802,
+      3,
+      64
+    ],
+    "forward_time_ms": 22.187611990375444,
+    "peak_gpu_memory_mb": 819.8818359375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Movies/seed44/comp_shared": {
+    "variant": "comp_shared",
+    "edge_count": 160802,
+    "factor_weights": {
+      "C": {
+        "mean": 0.666986346244812,
+        "std": 0.07038797438144684,
+        "cv": 0.10553135724252366,
+        "min": 0.5185097455978394,
+        "max": 0.9815158843994141,
+        "fraction_lt_0_75": 0.8636584122088033,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.666986346244812,
+        "std": 0.07038797438144684,
+        "cv": 0.10553135724252366,
+        "min": 0.5185097455978394,
+        "max": 0.9815158843994141,
+        "fraction_lt_0_75": 0.8636584122088033,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 0.666986346244812,
+        "std": 0.07038797438144684,
+        "cv": 0.10553135724252366,
+        "min": 0.5185097455978394,
+        "max": 0.9815158843994141,
+        "fraction_lt_0_75": 0.8636584122088033,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 1.0,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": 1.0,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": 1.0,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 56924,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.6736606955528259,
+            "different_label_mean_weight": 0.6636863946914673,
+            "auc_weight_to_same_label": 0.5290251313376002
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.6736606955528259,
+            "different_label_mean_weight": 0.6636863946914673,
+            "auc_weight_to_same_label": 0.5290251313376002
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.6736606955528259,
+            "different_label_mean_weight": 0.6636863946914673,
+            "auc_weight_to_same_label": 0.5290251313376002
+          }
+        }
+      },
+      "val": {
+        "edge_count": 6722,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.6693407297134399,
+            "different_label_mean_weight": 0.6624132990837097,
+            "auc_weight_to_same_label": 0.5224135067638616
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.6693407297134399,
+            "different_label_mean_weight": 0.6624132990837097,
+            "auc_weight_to_same_label": 0.5224135067638616
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.6693407297134399,
+            "different_label_mean_weight": 0.6624132990837097,
+            "auc_weight_to_same_label": 0.5224135067638616
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      160802,
+      3,
+      64
+    ],
+    "forward_time_ms": 22.517842007800937,
+    "peak_gpu_memory_mb": 821.42724609375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Movies/seed44/comp_ownership": {
+    "variant": "comp_ownership",
+    "edge_count": 160802,
+    "factor_weights": {
+      "C": {
+        "mean": 0.6573235988616943,
+        "std": 0.03392386436462402,
+        "cv": 0.05160907720850268,
+        "min": 0.5683908462524414,
+        "max": 0.8112398386001587,
+        "fraction_lt_0_75": 0.9933520727354137,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.9900405406951904,
+        "std": 0.11918611079454422,
+        "cv": 0.12038508111077316,
+        "min": 0.5895388126373291,
+        "max": 1.2469182014465332,
+        "fraction_lt_0_75": 0.04277931866519073,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 0.8397862911224365,
+        "std": 0.094119593501091,
+        "cv": 0.11207564888359062,
+        "min": 0.5812550783157349,
+        "max": 1.2107234001159668,
+        "fraction_lt_0_75": 0.18114202559669657,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.16501857635113204,
+        "spearman": 0.18605230485172308,
+        "mean_absolute_difference": 0.33324772119522095
+      },
+      "C_Pv": {
+        "pearson": 0.2163126621464085,
+        "spearman": 0.24819969521626373,
+        "mean_absolute_difference": 0.18284916877746582
+      },
+      "Pt_Pv": {
+        "pearson": 0.08514414289858395,
+        "spearman": 0.10897638842757898,
+        "mean_absolute_difference": 0.17909811437129974
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 56924,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.6579751372337341,
+            "different_label_mean_weight": 0.6574737429618835,
+            "auc_weight_to_same_label": 0.49134850119678286
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9896774888038635,
+            "different_label_mean_weight": 0.9904996156692505,
+            "auc_weight_to_same_label": 0.48911114935224687
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.8321030139923096,
+            "different_label_mean_weight": 0.8444644212722778,
+            "auc_weight_to_same_label": 0.4575200805194045
+          }
+        }
+      },
+      "val": {
+        "edge_count": 6722,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.6576626300811768,
+            "different_label_mean_weight": 0.6575151085853577,
+            "auc_weight_to_same_label": 0.4919192901497712
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9776402115821838,
+            "different_label_mean_weight": 0.9914626479148865,
+            "auc_weight_to_same_label": 0.4586718372552363
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.8386942744255066,
+            "different_label_mean_weight": 0.850212574005127,
+            "auc_weight_to_same_label": 0.4609898098019155
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      160802,
+      3,
+      64
+    ],
+    "forward_time_ms": 22.79588399687782,
+    "peak_gpu_memory_mb": 718.74365234375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Toys/seed42/comp_uniform": {
+    "variant": "comp_uniform",
+    "edge_count": 113402,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 40878,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      },
+      "val": {
+        "edge_count": 4608,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      113402,
+      3,
+      64
+    ],
+    "forward_time_ms": 23.32192799076438,
+    "peak_gpu_memory_mb": 757.62890625,
+    "uses_test_labels_or_metrics": false
+  },
+  "Toys/seed42/comp_shared": {
+    "variant": "comp_shared",
+    "edge_count": 113402,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0101463794708252,
+        "std": 0.07769762724637985,
+        "cv": 0.07691719618604434,
+        "min": 0.7325174808502197,
+        "max": 1.2796989679336548,
+        "fraction_lt_0_75": 4.409093314050899e-05,
+        "fraction_gt_1_25": 0.0004497275180331917,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0101463794708252,
+        "std": 0.07769762724637985,
+        "cv": 0.07691719618604434,
+        "min": 0.7325174808502197,
+        "max": 1.2796989679336548,
+        "fraction_lt_0_75": 4.409093314050899e-05,
+        "fraction_gt_1_25": 0.0004497275180331917,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0101463794708252,
+        "std": 0.07769762724637985,
+        "cv": 0.07691719618604434,
+        "min": 0.7325174808502197,
+        "max": 1.2796989679336548,
+        "fraction_lt_0_75": 4.409093314050899e-05,
+        "fraction_gt_1_25": 0.0004497275180331917,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 1.0,
+        "spearman": 0.9999999999999999,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": 1.0,
+        "spearman": 0.9999999999999999,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": 1.0,
+        "spearman": 0.9999999999999999,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 40878,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0169553756713867,
+            "different_label_mean_weight": 0.9907756447792053,
+            "auc_weight_to_same_label": 0.5950936945008753
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0169553756713867,
+            "different_label_mean_weight": 0.9907756447792053,
+            "auc_weight_to_same_label": 0.5950936945008753
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0169553756713867,
+            "different_label_mean_weight": 0.9907756447792053,
+            "auc_weight_to_same_label": 0.5950936945008753
+          }
+        }
+      },
+      "val": {
+        "edge_count": 4608,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0146586894989014,
+            "different_label_mean_weight": 0.9962649941444397,
+            "auc_weight_to_same_label": 0.5700727870569694
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0146586894989014,
+            "different_label_mean_weight": 0.9962649941444397,
+            "auc_weight_to_same_label": 0.5700727870569694
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0146586894989014,
+            "different_label_mean_weight": 0.9962649941444397,
+            "auc_weight_to_same_label": 0.5700727870569694
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      113402,
+      3,
+      64
+    ],
+    "forward_time_ms": 23.679461010033265,
+    "peak_gpu_memory_mb": 758.9345703125,
+    "uses_test_labels_or_metrics": false
+  },
+  "Toys/seed42/comp_ownership": {
+    "variant": "comp_ownership",
+    "edge_count": 113402,
+    "factor_weights": {
+      "C": {
+        "mean": 1.118143916130066,
+        "std": 0.06923702359199524,
+        "cv": 0.061921388287499636,
+        "min": 0.9026731252670288,
+        "max": 1.2999519109725952,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.01756582776317878,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.9704601168632507,
+        "std": 0.050493452697992325,
+        "cv": 0.0520304253833725,
+        "min": 0.785815417766571,
+        "max": 1.1299612522125244,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.2026783227920532,
+        "std": 0.09895668178796768,
+        "cv": 0.08228025724969984,
+        "min": 0.8425707817077637,
+        "max": 1.4543901681900024,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.3416165499726636,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.5510025241026072,
+        "spearman": 0.534966753285775,
+        "mean_absolute_difference": 0.14790645241737366
+      },
+      "C_Pv": {
+        "pearson": 0.039874076389444145,
+        "spearman": 0.07674349959722034,
+        "mean_absolute_difference": 0.12033291161060333
+      },
+      "Pt_Pv": {
+        "pearson": 0.044913927839551976,
+        "spearman": 0.04037357623963235,
+        "mean_absolute_difference": 0.23468537628650665
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 40878,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.1225489377975464,
+            "different_label_mean_weight": 1.1044255495071411,
+            "auc_weight_to_same_label": 0.5775721190685164
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9727095365524292,
+            "different_label_mean_weight": 0.9635704159736633,
+            "auc_weight_to_same_label": 0.548865118907951
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.2021619081497192,
+            "different_label_mean_weight": 1.1997249126434326,
+            "auc_weight_to_same_label": 0.5046448199272665
+          }
+        }
+      },
+      "val": {
+        "edge_count": 4608,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.1224743127822876,
+            "different_label_mean_weight": 1.1063016653060913,
+            "auc_weight_to_same_label": 0.5676739293004066
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9735048413276672,
+            "different_label_mean_weight": 0.9638137817382812,
+            "auc_weight_to_same_label": 0.5533650423590608
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.2057788372039795,
+            "different_label_mean_weight": 1.2068085670471191,
+            "auc_weight_to_same_label": 0.48903987074364946
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      113402,
+      3,
+      64
+    ],
+    "forward_time_ms": 24.440805980702862,
+    "peak_gpu_memory_mb": 632.8544921875,
+    "uses_test_labels_or_metrics": false
+  },
+  "Toys/seed43/comp_uniform": {
+    "variant": "comp_uniform",
+    "edge_count": 113402,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 41490,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      },
+      "val": {
+        "edge_count": 4432,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      113402,
+      3,
+      64
+    ],
+    "forward_time_ms": 23.279626009752974,
+    "peak_gpu_memory_mb": 757.62890625,
+    "uses_test_labels_or_metrics": false
+  },
+  "Toys/seed43/comp_shared": {
+    "variant": "comp_shared",
+    "edge_count": 113402,
+    "factor_weights": {
+      "C": {
+        "mean": 1.2021868228912354,
+        "std": 0.06634754687547684,
+        "cv": 0.05518904850072496,
+        "min": 0.9422905445098877,
+        "max": 1.3868563175201416,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.2536992292904887,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.2021868228912354,
+        "std": 0.06634754687547684,
+        "cv": 0.05518904850072496,
+        "min": 0.9422905445098877,
+        "max": 1.3868563175201416,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.2536992292904887,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.2021868228912354,
+        "std": 0.06634754687547684,
+        "cv": 0.05518904850072496,
+        "min": 0.9422905445098877,
+        "max": 1.3868563175201416,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.2536992292904887,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 1.0,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": 1.0,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": 1.0,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 41490,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.204291820526123,
+            "different_label_mean_weight": 1.194534182548523,
+            "auc_weight_to_same_label": 0.542945347264719
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.204291820526123,
+            "different_label_mean_weight": 1.194534182548523,
+            "auc_weight_to_same_label": 0.542945347264719
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.204291820526123,
+            "different_label_mean_weight": 1.194534182548523,
+            "auc_weight_to_same_label": 0.542945347264719
+          }
+        }
+      },
+      "val": {
+        "edge_count": 4432,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.2031011581420898,
+            "different_label_mean_weight": 1.194837212562561,
+            "auc_weight_to_same_label": 0.5354622278597612
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.2031011581420898,
+            "different_label_mean_weight": 1.194837212562561,
+            "auc_weight_to_same_label": 0.5354622278597612
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.2031011581420898,
+            "different_label_mean_weight": 1.194837212562561,
+            "auc_weight_to_same_label": 0.5354622278597612
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      113402,
+      3,
+      64
+    ],
+    "forward_time_ms": 23.463560006348416,
+    "peak_gpu_memory_mb": 758.9345703125,
+    "uses_test_labels_or_metrics": false
+  },
+  "Toys/seed43/comp_ownership": {
+    "variant": "comp_ownership",
+    "edge_count": 113402,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0681555271148682,
+        "std": 0.10165347903966904,
+        "cv": 0.09516730144554815,
+        "min": 0.715736448764801,
+        "max": 1.2916499376296997,
+        "fraction_lt_0_75": 0.000520273011058006,
+        "fraction_gt_1_25": 0.005290911976861079,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.8741540312767029,
+        "std": 0.07071606814861298,
+        "cv": 0.08089657613925555,
+        "min": 0.5899534225463867,
+        "max": 1.1320613622665405,
+        "fraction_lt_0_75": 0.045122660975996896,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.1388784646987915,
+        "std": 0.12884223461151123,
+        "cv": 0.11313080245624557,
+        "min": 0.6996824741363525,
+        "max": 1.4485673904418945,
+        "fraction_lt_0_75": 0.0006437276238514312,
+        "fraction_gt_1_25": 0.20752720410574768,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.24984411767789103,
+        "spearman": 0.26391746599787214,
+        "mean_absolute_difference": 0.19958211481571198
+      },
+      "C_Pv": {
+        "pearson": 0.36398372551625924,
+        "spearman": 0.38428310529133297,
+        "mean_absolute_difference": 0.12301769852638245
+      },
+      "Pt_Pv": {
+        "pearson": 0.14491450669947797,
+        "spearman": 0.15616715462334244,
+        "mean_absolute_difference": 0.2687244415283203
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 41490,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0699577331542969,
+            "different_label_mean_weight": 1.0586001873016357,
+            "auc_weight_to_same_label": 0.5502651260897334
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.8762999176979065,
+            "different_label_mean_weight": 0.8739908933639526,
+            "auc_weight_to_same_label": 0.5058023869673084
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.1478486061096191,
+            "different_label_mean_weight": 1.111324429512024,
+            "auc_weight_to_same_label": 0.5882371540617614
+          }
+        }
+      },
+      "val": {
+        "edge_count": 4432,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0677624940872192,
+            "different_label_mean_weight": 1.067161202430725,
+            "auc_weight_to_same_label": 0.5182536165819148
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.8725976943969727,
+            "different_label_mean_weight": 0.8699166178703308,
+            "auc_weight_to_same_label": 0.5089506155362017
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.1422460079193115,
+            "different_label_mean_weight": 1.1091482639312744,
+            "auc_weight_to_same_label": 0.5785673399624751
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      113402,
+      3,
+      64
+    ],
+    "forward_time_ms": 24.15397801087238,
+    "peak_gpu_memory_mb": 632.8544921875,
+    "uses_test_labels_or_metrics": false
+  },
+  "Toys/seed44/comp_uniform": {
+    "variant": "comp_uniform",
+    "edge_count": 113402,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 40704,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      },
+      "val": {
+        "edge_count": 4678,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      113402,
+      3,
+      64
+    ],
+    "forward_time_ms": 23.267131007742137,
+    "peak_gpu_memory_mb": 757.62890625,
+    "uses_test_labels_or_metrics": false
+  },
+  "Toys/seed44/comp_shared": {
+    "variant": "comp_shared",
+    "edge_count": 113402,
+    "factor_weights": {
+      "C": {
+        "mean": 1.2319270372390747,
+        "std": 0.05307479947805405,
+        "cv": 0.04308274587186778,
+        "min": 1.0044573545455933,
+        "max": 1.3857086896896362,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.3989171266820691,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.2319270372390747,
+        "std": 0.05307479947805405,
+        "cv": 0.04308274587186778,
+        "min": 1.0044573545455933,
+        "max": 1.3857086896896362,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.3989171266820691,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.2319270372390747,
+        "std": 0.05307479947805405,
+        "cv": 0.04308274587186778,
+        "min": 1.0044573545455933,
+        "max": 1.3857086896896362,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.3989171266820691,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 1.0,
+        "spearman": 0.9999999999999999,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": 1.0,
+        "spearman": 0.9999999999999999,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": 1.0,
+        "spearman": 0.9999999999999999,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 40704,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.237436056137085,
+            "different_label_mean_weight": 1.2197433710098267,
+            "auc_weight_to_same_label": 0.5935930863176553
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.237436056137085,
+            "different_label_mean_weight": 1.2197433710098267,
+            "auc_weight_to_same_label": 0.5935930863176553
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.237436056137085,
+            "different_label_mean_weight": 1.2197433710098267,
+            "auc_weight_to_same_label": 0.5935930863176553
+          }
+        }
+      },
+      "val": {
+        "edge_count": 4678,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.2320497035980225,
+            "different_label_mean_weight": 1.218078374862671,
+            "auc_weight_to_same_label": 0.5745391360726898
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.2320497035980225,
+            "different_label_mean_weight": 1.218078374862671,
+            "auc_weight_to_same_label": 0.5745391360726898
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.2320497035980225,
+            "different_label_mean_weight": 1.218078374862671,
+            "auc_weight_to_same_label": 0.5745391360726898
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      113402,
+      3,
+      64
+    ],
+    "forward_time_ms": 24.116033979225904,
+    "peak_gpu_memory_mb": 758.9345703125,
+    "uses_test_labels_or_metrics": false
+  },
+  "Toys/seed44/comp_ownership": {
+    "variant": "comp_ownership",
+    "edge_count": 113402,
+    "factor_weights": {
+      "C": {
+        "mean": 1.2350717782974243,
+        "std": 0.05136454850435257,
+        "cv": 0.04158831041800649,
+        "min": 1.0506994724273682,
+        "max": 1.390869140625,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.40895222306484896,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.9774175882339478,
+        "std": 0.08236013352870941,
+        "cv": 0.08426299518256293,
+        "min": 0.7410458326339722,
+        "max": 1.2639695405960083,
+        "fraction_lt_0_75": 1.7636373256203593e-05,
+        "fraction_gt_1_25": 9.700005290911977e-05,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.2988646030426025,
+        "std": 0.10209120064973831,
+        "cv": 0.07860034095208131,
+        "min": 0.8881806135177612,
+        "max": 1.4842010736465454,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.722280030334562,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.00028385645346867946,
+        "spearman": -0.025592983071408566,
+        "mean_absolute_difference": 0.25767791271209717
+      },
+      "C_Pv": {
+        "pearson": 0.35796505701935616,
+        "spearman": 0.2858867560171914,
+        "mean_absolute_difference": 0.09766438603401184
+      },
+      "Pt_Pv": {
+        "pearson": -0.02074370859005107,
+        "spearman": -0.0259100876058286,
+        "mean_absolute_difference": 0.3220713138580322
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 40704,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.2333086729049683,
+            "different_label_mean_weight": 1.236340880393982,
+            "auc_weight_to_same_label": 0.49262909192819576
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9837953448295593,
+            "different_label_mean_weight": 0.9656122922897339,
+            "auc_weight_to_same_label": 0.561389461877887
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.302207589149475,
+            "different_label_mean_weight": 1.2869588136672974,
+            "auc_weight_to_same_label": 0.5596220860824782
+          }
+        }
+      },
+      "val": {
+        "edge_count": 4678,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.2343209981918335,
+            "different_label_mean_weight": 1.2452332973480225,
+            "auc_weight_to_same_label": 0.4411531139640965
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.974256694316864,
+            "different_label_mean_weight": 0.9577388763427734,
+            "auc_weight_to_same_label": 0.5550038625662155
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.2999674081802368,
+            "different_label_mean_weight": 1.2839716672897339,
+            "auc_weight_to_same_label": 0.5597676942319012
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      113402,
+      3,
+      64
+    ],
+    "forward_time_ms": 24.187409988371655,
+    "peak_gpu_memory_mb": 632.8544921875,
+    "uses_test_labels_or_metrics": false
+  },
+  "Grocery/seed42/comp_uniform": {
+    "variant": "comp_uniform",
+    "edge_count": 142262,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 52576,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      },
+      "val": {
+        "edge_count": 5160,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      142262,
+      3,
+      64
+    ],
+    "forward_time_ms": 21.478053997270763,
+    "peak_gpu_memory_mb": 774.4365234375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Grocery/seed42/comp_shared": {
+    "variant": "comp_shared",
+    "edge_count": 142262,
+    "factor_weights": {
+      "C": {
+        "mean": 0.7095305323600769,
+        "std": 0.07863252609968185,
+        "cv": 0.11082331557759792,
+        "min": 0.5198345184326172,
+        "max": 1.1012927293777466,
+        "fraction_lt_0_75": 0.7185193516188441,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.7095305323600769,
+        "std": 0.07863252609968185,
+        "cv": 0.11082331557759792,
+        "min": 0.5198345184326172,
+        "max": 1.1012927293777466,
+        "fraction_lt_0_75": 0.7185193516188441,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 0.7095305323600769,
+        "std": 0.07863252609968185,
+        "cv": 0.11082331557759792,
+        "min": 0.5198345184326172,
+        "max": 1.1012927293777466,
+        "fraction_lt_0_75": 0.7185193516188441,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.9999999999999998,
+        "spearman": 0.9999999999999998,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": 0.9999999999999998,
+        "spearman": 0.9999999999999998,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": 0.9999999999999998,
+        "spearman": 0.9999999999999998,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 52576,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.7095266580581665,
+            "different_label_mean_weight": 0.7028140425682068,
+            "auc_weight_to_same_label": 0.5224797335321093
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.7095266580581665,
+            "different_label_mean_weight": 0.7028140425682068,
+            "auc_weight_to_same_label": 0.5224797335321093
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.7095266580581665,
+            "different_label_mean_weight": 0.7028140425682068,
+            "auc_weight_to_same_label": 0.5224797335321093
+          }
+        }
+      },
+      "val": {
+        "edge_count": 5160,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.714195728302002,
+            "different_label_mean_weight": 0.7060697674751282,
+            "auc_weight_to_same_label": 0.523197688321226
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.714195728302002,
+            "different_label_mean_weight": 0.7060697674751282,
+            "auc_weight_to_same_label": 0.523197688321226
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.714195728302002,
+            "different_label_mean_weight": 0.7060697674751282,
+            "auc_weight_to_same_label": 0.523197688321226
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      142262,
+      3,
+      64
+    ],
+    "forward_time_ms": 21.505468990653753,
+    "peak_gpu_memory_mb": 776.06201171875,
+    "uses_test_labels_or_metrics": false
+  },
+  "Grocery/seed42/comp_ownership": {
+    "variant": "comp_ownership",
+    "edge_count": 142262,
+    "factor_weights": {
+      "C": {
+        "mean": 0.7871096730232239,
+        "std": 0.07622195035219193,
+        "cv": 0.09683777618871034,
+        "min": 0.5810768008232117,
+        "max": 1.0869730710983276,
+        "fraction_lt_0_75": 0.3458056262389113,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.8418010473251343,
+        "std": 0.11981680244207382,
+        "cv": 0.14233387190809255,
+        "min": 0.5781531929969788,
+        "max": 1.2644262313842773,
+        "fraction_lt_0_75": 0.25032686170586665,
+        "fraction_gt_1_25": 0.00012652711194837695,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0243762731552124,
+        "std": 0.24265922605991364,
+        "cv": 0.23688485610125623,
+        "min": 0.5121181011199951,
+        "max": 1.4799522161483765,
+        "fraction_lt_0_75": 0.17075536685833181,
+        "fraction_gt_1_25": 0.21780939393513377,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.00754669234903947,
+        "spearman": -0.012917559604358687,
+        "mean_absolute_difference": 0.12133537977933884
+      },
+      "C_Pv": {
+        "pearson": -0.18773194551755074,
+        "spearman": -0.1925985900405252,
+        "mean_absolute_difference": 0.2981240451335907
+      },
+      "Pt_Pv": {
+        "pearson": 0.011208271834770744,
+        "spearman": 0.061088943095105534,
+        "mean_absolute_difference": 0.2696335017681122
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 52576,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.7942187190055847,
+            "different_label_mean_weight": 0.7699847221374512,
+            "auc_weight_to_same_label": 0.5956241221831837
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.8517127633094788,
+            "different_label_mean_weight": 0.8236990571022034,
+            "auc_weight_to_same_label": 0.5518463827324855
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0059804916381836,
+            "different_label_mean_weight": 1.037461280822754,
+            "auc_weight_to_same_label": 0.46317815397851125
+          }
+        }
+      },
+      "val": {
+        "edge_count": 5160,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.8000434637069702,
+            "different_label_mean_weight": 0.7732688784599304,
+            "auc_weight_to_same_label": 0.6132996468987656
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.8471613526344299,
+            "different_label_mean_weight": 0.8181375861167908,
+            "auc_weight_to_same_label": 0.5593385329982403
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.017848014831543,
+            "different_label_mean_weight": 1.040198802947998,
+            "auc_weight_to_same_label": 0.4749088974289625
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      142262,
+      3,
+      64
+    ],
+    "forward_time_ms": 22.145605995319784,
+    "peak_gpu_memory_mb": 669.0703125,
+    "uses_test_labels_or_metrics": false
+  },
+  "Grocery/seed43/comp_uniform": {
+    "variant": "comp_uniform",
+    "edge_count": 142262,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 52384,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      },
+      "val": {
+        "edge_count": 5684,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      142262,
+      3,
+      64
+    ],
+    "forward_time_ms": 21.25990198692307,
+    "peak_gpu_memory_mb": 774.4365234375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Grocery/seed43/comp_shared": {
+    "variant": "comp_shared",
+    "edge_count": 142262,
+    "factor_weights": {
+      "C": {
+        "mean": 0.8985358476638794,
+        "std": 0.1430116444826126,
+        "cv": 0.15916075563866633,
+        "min": 0.5349345803260803,
+        "max": 1.3229215145111084,
+        "fraction_lt_0_75": 0.17806582221534914,
+        "fraction_gt_1_25": 0.001968199519196975,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.8985358476638794,
+        "std": 0.1430116444826126,
+        "cv": 0.15916075563866633,
+        "min": 0.5349345803260803,
+        "max": 1.3229215145111084,
+        "fraction_lt_0_75": 0.17806582221534914,
+        "fraction_gt_1_25": 0.001968199519196975,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 0.8985358476638794,
+        "std": 0.1430116444826126,
+        "cv": 0.15916075563866633,
+        "min": 0.5349345803260803,
+        "max": 1.3229215145111084,
+        "fraction_lt_0_75": 0.17806582221534914,
+        "fraction_gt_1_25": 0.001968199519196975,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.9999999999999998,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": 0.9999999999999998,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": 0.9999999999999998,
+        "spearman": 1.0,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 52384,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.9079426527023315,
+            "different_label_mean_weight": 0.8771389722824097,
+            "auc_weight_to_same_label": 0.5640246053629915
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9079426527023315,
+            "different_label_mean_weight": 0.8771389722824097,
+            "auc_weight_to_same_label": 0.5640246053629915
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.9079426527023315,
+            "different_label_mean_weight": 0.8771389722824097,
+            "auc_weight_to_same_label": 0.5640246053629915
+          }
+        }
+      },
+      "val": {
+        "edge_count": 5684,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.9066397547721863,
+            "different_label_mean_weight": 0.8816695809364319,
+            "auc_weight_to_same_label": 0.5517876578066856
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9066397547721863,
+            "different_label_mean_weight": 0.8816695809364319,
+            "auc_weight_to_same_label": 0.5517876578066856
+          },
+          "Pv": {
+            "same_label_mean_weight": 0.9066397547721863,
+            "different_label_mean_weight": 0.8816695809364319,
+            "auc_weight_to_same_label": 0.5517876578066856
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      142262,
+      3,
+      64
+    ],
+    "forward_time_ms": 21.615270990878344,
+    "peak_gpu_memory_mb": 776.06201171875,
+    "uses_test_labels_or_metrics": false
+  },
+  "Grocery/seed43/comp_ownership": {
+    "variant": "comp_ownership",
+    "edge_count": 142262,
+    "factor_weights": {
+      "C": {
+        "mean": 1.003605604171753,
+        "std": 0.04764324799180031,
+        "cv": 0.047472082453265015,
+        "min": 0.8194358944892883,
+        "max": 1.1990498304367065,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.9028637409210205,
+        "std": 0.11329791694879532,
+        "cv": 0.12548728209333002,
+        "min": 0.6496469378471375,
+        "max": 1.28826105594635,
+        "fraction_lt_0_75": 0.05572816352926291,
+        "fraction_gt_1_25": 0.00023196637190535773,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.2157829999923706,
+        "std": 0.1684015691280365,
+        "cv": 0.13851285067244176,
+        "min": 0.6588444709777832,
+        "max": 1.4912439584732056,
+        "fraction_lt_0_75": 0.0013144761074636937,
+        "fraction_gt_1_25": 0.5048712938100125,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 7.0292839971320525e-06
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.35830993399838523,
+        "spearman": 0.33934193730801293,
+        "mean_absolute_difference": 0.12366512417793274
+      },
+      "C_Pv": {
+        "pearson": 0.26935439617647394,
+        "spearman": 0.27734642452257885,
+        "mean_absolute_difference": 0.2332446575164795
+      },
+      "Pt_Pv": {
+        "pearson": 0.10563996363935509,
+        "spearman": 0.13089065252624216,
+        "mean_absolute_difference": 0.3261663615703583
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 52384,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0069265365600586,
+            "different_label_mean_weight": 0.996898889541626,
+            "auc_weight_to_same_label": 0.5524373336059812
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9072863459587097,
+            "different_label_mean_weight": 0.8922103047370911,
+            "auc_weight_to_same_label": 0.5254085702006968
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.2144279479980469,
+            "different_label_mean_weight": 1.2164503335952759,
+            "auc_weight_to_same_label": 0.4907785921075073
+          }
+        }
+      },
+      "val": {
+        "edge_count": 5684,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.004361629486084,
+            "different_label_mean_weight": 0.9963681101799011,
+            "auc_weight_to_same_label": 0.544244620931958
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.9032262563705444,
+            "different_label_mean_weight": 0.8911697864532471,
+            "auc_weight_to_same_label": 0.5225510192298255
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.2200182676315308,
+            "different_label_mean_weight": 1.2168903350830078,
+            "auc_weight_to_same_label": 0.4988531679701145
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      142262,
+      3,
+      64
+    ],
+    "forward_time_ms": 22.085278993472457,
+    "peak_gpu_memory_mb": 669.0703125,
+    "uses_test_labels_or_metrics": false
+  },
+  "Grocery/seed44/comp_uniform": {
+    "variant": "comp_uniform",
+    "edge_count": 142262,
+    "factor_weights": {
+      "C": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.0,
+        "std": 0.0,
+        "cv": 0.0,
+        "min": 1.0,
+        "max": 1.0,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": null,
+        "spearman": null,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 53010,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      },
+      "val": {
+        "edge_count": 5360,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.0,
+            "different_label_mean_weight": 1.0,
+            "auc_weight_to_same_label": 0.5
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      142262,
+      3,
+      64
+    ],
+    "forward_time_ms": 21.224059019004926,
+    "peak_gpu_memory_mb": 774.4365234375,
+    "uses_test_labels_or_metrics": false
+  },
+  "Grocery/seed44/comp_shared": {
+    "variant": "comp_shared",
+    "edge_count": 142262,
+    "factor_weights": {
+      "C": {
+        "mean": 1.1437066793441772,
+        "std": 0.07808884233236313,
+        "cv": 0.06827698372553068,
+        "min": 0.8225176334381104,
+        "max": 1.3486859798431396,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.06482405702155178,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 1.1437066793441772,
+        "std": 0.07808884233236313,
+        "cv": 0.06827698372553068,
+        "min": 0.8225176334381104,
+        "max": 1.3486859798431396,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.06482405702155178,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.1437066793441772,
+        "std": 0.07808884233236313,
+        "cv": 0.06827698372553068,
+        "min": 0.8225176334381104,
+        "max": 1.3486859798431396,
+        "fraction_lt_0_75": 0.0,
+        "fraction_gt_1_25": 0.06482405702155178,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 1.0,
+        "spearman": 0.9999999999999998,
+        "mean_absolute_difference": 0.0
+      },
+      "C_Pv": {
+        "pearson": 1.0,
+        "spearman": 0.9999999999999998,
+        "mean_absolute_difference": 0.0
+      },
+      "Pt_Pv": {
+        "pearson": 1.0,
+        "spearman": 0.9999999999999998,
+        "mean_absolute_difference": 0.0
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 53010,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.1501284837722778,
+            "different_label_mean_weight": 1.1318371295928955,
+            "auc_weight_to_same_label": 0.5647162335005225
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.1501284837722778,
+            "different_label_mean_weight": 1.1318371295928955,
+            "auc_weight_to_same_label": 0.5647162335005225
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.1501284837722778,
+            "different_label_mean_weight": 1.1318371295928955,
+            "auc_weight_to_same_label": 0.5647162335005225
+          }
+        }
+      },
+      "val": {
+        "edge_count": 5360,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 1.1492713689804077,
+            "different_label_mean_weight": 1.1237244606018066,
+            "auc_weight_to_same_label": 0.5932607467252256
+          },
+          "Pt": {
+            "same_label_mean_weight": 1.1492713689804077,
+            "different_label_mean_weight": 1.1237244606018066,
+            "auc_weight_to_same_label": 0.5932607467252256
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.1492713689804077,
+            "different_label_mean_weight": 1.1237244606018066,
+            "auc_weight_to_same_label": 0.5932607467252256
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      142262,
+      3,
+      64
+    ],
+    "forward_time_ms": 21.435467002447695,
+    "peak_gpu_memory_mb": 776.06201171875,
+    "uses_test_labels_or_metrics": false
+  },
+  "Grocery/seed44/comp_ownership": {
+    "variant": "comp_ownership",
+    "edge_count": 142262,
+    "factor_weights": {
+      "C": {
+        "mean": 0.9068638682365417,
+        "std": 0.09040221571922302,
+        "cv": 0.09968664414320118,
+        "min": 0.6009203195571899,
+        "max": 1.2699414491653442,
+        "fraction_lt_0_75": 0.040495705107477756,
+        "fraction_gt_1_25": 4.9204987979924365e-05,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pt": {
+        "mean": 0.8434059619903564,
+        "std": 0.10670889168977737,
+        "cv": 0.12652138649572114,
+        "min": 0.5479649901390076,
+        "max": 1.2202248573303223,
+        "fraction_lt_0_75": 0.19931534773867934,
+        "fraction_gt_1_25": 0.0,
+        "fraction_near_lower": 0.0,
+        "fraction_near_upper": 0.0
+      },
+      "Pv": {
+        "mean": 1.1507062911987305,
+        "std": 0.2273266762495041,
+        "cv": 0.19755403962612392,
+        "min": 0.5090543627738953,
+        "max": 1.4759504795074463,
+        "fraction_lt_0_75": 0.08847759767190114,
+        "fraction_gt_1_25": 0.4223967046716621,
+        "fraction_near_lower": 2.1087851991396155e-05,
+        "fraction_near_upper": 0.0
+      }
+    },
+    "cross_factor": {
+      "C_Pt": {
+        "pearson": 0.07659193188287089,
+        "spearman": 0.09144950574060977,
+        "mean_absolute_difference": 0.11917033791542053
+      },
+      "C_Pv": {
+        "pearson": 0.22691328919724116,
+        "spearman": 0.2340886696884573,
+        "mean_absolute_difference": 0.29529592394828796
+      },
+      "Pt_Pv": {
+        "pearson": 0.2840159041084822,
+        "spearman": 0.26139632478344094,
+        "mean_absolute_difference": 0.33426836133003235
+      }
+    },
+    "label_edge_diagnostic": {
+      "train": {
+        "edge_count": 53010,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.9127933979034424,
+            "different_label_mean_weight": 0.8961885571479797,
+            "auc_weight_to_same_label": 0.5527391353115875
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.8530235886573792,
+            "different_label_mean_weight": 0.8277204632759094,
+            "auc_weight_to_same_label": 0.564711844143043
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.1515834331512451,
+            "different_label_mean_weight": 1.143662929534912,
+            "auc_weight_to_same_label": 0.5146374969715108
+          }
+        }
+      },
+      "val": {
+        "edge_count": 5360,
+        "factors": {
+          "C": {
+            "same_label_mean_weight": 0.9108732342720032,
+            "different_label_mean_weight": 0.8885994553565979,
+            "auc_weight_to_same_label": 0.57355298185613
+          },
+          "Pt": {
+            "same_label_mean_weight": 0.8473383784294128,
+            "different_label_mean_weight": 0.8147920966148376,
+            "auc_weight_to_same_label": 0.5827062143434748
+          },
+          "Pv": {
+            "same_label_mean_weight": 1.1539573669433594,
+            "different_label_mean_weight": 1.1486220359802246,
+            "auc_weight_to_same_label": 0.5145691758226812
+          }
+        }
+      }
+    },
+    "peak_allocated_tensor_shape": [
+      142262,
+      3,
+      64
+    ],
+    "forward_time_ms": 21.979353012284264,
+    "peak_gpu_memory_mb": 669.0703125,
+    "uses_test_labels_or_metrics": false
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "variants": [
+    "comp_uniform",
+    "comp_shared",
+    "comp_ownership"
+  ],
+  "matched_controls": [
+    "SemanticFactorizer",
+    "Fusion",
+    "OutputMLP",
+    "OutputNorm",
+    "EvidenceScorer",
+    "num_hops",
+    "restart",
+    "aux_loss"
+  ],
+  "construction_order_matched": true,
+  "per_dataset": {
+    "Movies": {
+      "model_params": {
+        "comp_uniform": 1186817,
+        "comp_shared": 1186817,
+        "comp_ownership": 1186817
+      },
+      "head_params": {
+        "comp_uniform": 5140,
+        "comp_shared": 5140,
+        "comp_ownership": 5140
+      },
+      "total_params": {
+        "comp_uniform": 1191957,
+        "comp_shared": 1191957,
+        "comp_ownership": 1191957
+      },
+      "model_parameter_parity": true,
+      "head_parameter_parity": true,
+      "total_parameter_parity": true
+    },
+    "Toys": {
+      "model_params": {
+        "comp_uniform": 1186817,
+        "comp_shared": 1186817,
+        "comp_ownership": 1186817
+      },
+      "head_params": {
+        "comp_uniform": 4626,
+        "comp_shared": 4626,
+        "comp_ownership": 4626
+      },
+      "total_params": {
+        "comp_uniform": 1191443,
+        "comp_shared": 1191443,
+        "comp_ownership": 1191443
+      },
+      "model_parameter_parity": true,
+      "head_parameter_parity": true,
+      "total_parameter_parity": true
+    },
+    "Grocery": {
+      "model_params": {
+        "comp_uniform": 1186817,
+        "comp_shared": 1186817,
+        "comp_ownership": 1186817
+      },
+      "head_params": {
+        "comp_uniform": 5140,
+        "comp_shared": 5140,
+        "comp_ownership": 5140
+      },
+      "total_params": {
+        "comp_uniform": 1191957,
+        "comp_shared": 1191957,
+        "comp_ownership": 1191957
+      },
+      "model_parameter_parity": true,
+      "head_parameter_parity": true,
+      "total_parameter_parity": true
+    }
+  },
+  "all_model_parameter_parity": true,
+  "all_head_parameter_parity": true,
+  "all_total_parameter_parity": true
+}

@@ -35,6 +35,21 @@
    ORED-2 的 Ownership-RD − Joint-RD 宏平均 Acc 为正但低于预注册 STRONG_GO
    阈值，故只登记为 VIABLE，不包装为 superiority。
 
+8. **ORED-2 finding: Output refinement alone on P0 was NOT a stable standalone
+   gain.** `p0_refine` 相对 P0 的 registered result 为 `-0.28 Acc / -0.58
+   Macro-F1`；不得将 Output Refinement 写成 independently useful。
+
+9. **ORED-3A generic learned composition is NOT SUPPORTED as an Acc core gain.**
+   Shared−Uniform 的宏平均 paired ΔAcc 为 `-0.090 pp`，Ownership−Uniform
+   为 `-0.057 pp`。后者的 Macro-F1 次级信号为正，但不足以替代 Acc gate，因而
+   不把 composition 升格为默认核心。
+
+10. **ORED-3A ownership-specific composition is NOT SUPPORTED as a core
+    mechanism.** Ownership−Shared 的宏平均 paired ΔAcc 为 `+0.033 pp`，仅
+    `5/9` 个配对 seed Acc 为正，低于 preregistered ownership gate。诊断中出现
+    的 factor-wise weight differentiation 只是 descriptive evidence，不等于
+    performance superiority。
+
 ## CLOSED / NOT TO REINTRODUCE
 
 以下方向在 ORED-MAG 主线中关闭，不能作为默认核心重新引入：
@@ -52,10 +67,12 @@
 
 后续可研究但尚未被 ORED-0 证明的方向：
 
-1. Ownership-conditioned Composition
-2. Ownership-conditioned Exposure
-3. Exposure × Composition
-4. same-node cross-factor conditioning without cross-factor transport
+1. Ownership-conditioned Exposure
+2. Exposure × Composition
+3. same-node cross-factor conditioning without cross-factor transport
+
+ORED-3A 已关闭“将 generic/ownership-conditioned Composition 作为默认核心”的
+升级路径；composition 相关权重诊断仍可作为后续分析材料，但不能作为已支持机制。
 
 ## Guardrails
 

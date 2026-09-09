@@ -3,12 +3,15 @@ from __future__ import annotations
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torch_geometric.nn.conv.gcn_conv import gcn_norm
 
 from .common import get_activation, make_norm
 from .ored_components import (
+    OwnershipEdgeScorer,
     ReconstructionHead,
     RestartDiffusion,
     SemanticFactorizer,
+    apply_restart_diffusion,
     normalize_restart_adjacency,
 )
 
@@ -24,7 +27,15 @@ class Model(nn.Module):
     def __init__(self, cfg, data_info):
         super().__init__()
         variant = str(cfg.model.get("variant", "p0")).lower()
-        valid_variants = {"p0", "p0_refine", "joint_rd", "ownership_rd"}
+        valid_variants = {
+            "p0",
+            "p0_refine",
+            "joint_rd",
+            "ownership_rd",
+            "comp_uniform",
+            "comp_shared",
+            "comp_ownership",
+        }
         if variant not in valid_variants:
             raise ValueError(
                 "ored_mag variant must be one of "
@@ -73,6 +84,7 @@ class Model(nn.Module):
         self.output_mlp = None
         self.output_norm = None
         self.restart_diffusion = None
+        self.edge_scorer = None
         if variant != "p0":
             self.output_mlp = nn.Sequential(
                 nn.Linear(hidden_dim, hidden_dim),
@@ -86,6 +98,19 @@ class Model(nn.Module):
             restart = float(cfg.model.get("restart", 0.15))
             add_self_loops = bool(cfg.model.get("diffusion_add_self_loops", True))
             self.restart_diffusion = RestartDiffusion(num_hops, restart, add_self_loops)
+            if variant in {"comp_uniform", "comp_shared", "comp_ownership"}:
+                # Construct after all ORED-2 parent modules so their
+                # initialization order remains unchanged.
+                self.edge_scorer = OwnershipEdgeScorer(
+                    factor_dim,
+                    int(cfg.model.get("score_hidden_dim", 64)),
+                )
+
+        # These are fixed by the ORED-3A protocol; reject accidental tuning.
+        self.composition_strength = float(cfg.model.get("composition_strength", 0.5))
+        self.composition_temperature = float(cfg.model.get("composition_temperature", 1.0))
+        if self.composition_strength != 0.5 or self.composition_temperature != 1.0:
+            raise ValueError("ORED-3A composition strength/temperature are fixed at 0.5/1.0")
 
         self.lambda_common = float(cfg.model.get("lambda_common", 0.1))
         self.lambda_orth = float(cfg.model.get("lambda_orth", 0.01))
@@ -123,6 +148,64 @@ class Model(nn.Module):
         if edge_index is None:
             return torch.empty((2, 0), dtype=torch.long, device=device)
         return edge_index.to(device=device, dtype=torch.long)
+
+    def _composition_weights(
+        self,
+        ownership0: torch.Tensor,
+        edge_index: torch.Tensor,
+    ) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        """Score original edges once and map scores to factor edge weights."""
+        if self.edge_scorer is None:
+            raise RuntimeError("composition weights requested without an edge scorer")
+        scores = self.edge_scorer(ownership0, edge_index)
+        if self.variant == "comp_uniform":
+            return scores.new_ones((scores.size(0), 3)), {"edge_scores": scores}
+
+        if self.variant == "comp_shared":
+            shared_score = scores.mean(dim=1)
+            shared = 1.0 + self.composition_strength * torch.tanh(
+                shared_score / self.composition_temperature
+            )
+            return shared.unsqueeze(-1).expand(-1, 3), {
+                "edge_scores": scores,
+                "edge_weight_shared": shared,
+            }
+        if self.variant == "comp_ownership":
+            weights = 1.0 + self.composition_strength * torch.tanh(
+                scores / self.composition_temperature
+            )
+            return weights, {"edge_scores": scores}
+        raise RuntimeError(f"composition weights requested for {self.variant!r}")
+
+    def _ownership_diffusion(
+        self,
+        ownership0: torch.Tensor,
+        edge_index: torch.Tensor,
+        edge_weights: torch.Tensor,
+    ) -> torch.Tensor:
+        """Diffuse each ownership payload with its own static normalized graph."""
+        assert self.restart_diffusion is not None
+        outputs: list[torch.Tensor] = []
+        for factor in range(3):
+            norm_edge_index, norm_edge_weight = gcn_norm(
+                edge_index,
+                edge_weight=edge_weights[:, factor],
+                num_nodes=int(ownership0.size(0)),
+                improved=False,
+                add_self_loops=self.restart_diffusion.add_self_loops,
+                flow="source_to_target",
+                dtype=ownership0.dtype,
+            )
+            outputs.append(
+                apply_restart_diffusion(
+                    ownership0[:, factor],
+                    norm_edge_index,
+                    norm_edge_weight,
+                    self.restart_diffusion.num_hops,
+                    self.restart_diffusion.restart,
+                )
+            )
+        return torch.stack(outputs, dim=1)
 
     def _variant_encoding(
         self,
@@ -163,14 +246,72 @@ class Model(nn.Module):
 
         # One normalized adjacency is reused for the three ownership streams.
         ownership0 = torch.stack([c0, pt0, pv0], dim=1)
-        ownership2 = self.restart_diffusion(
-            ownership0,
-            norm_edge_index=norm_edge_index,
-            norm_edge_weight=norm_edge_weight,
-        )
+        composition_info: dict[str, torch.Tensor] = {}
+        if self.variant == "ownership_rd":
+            ownership2 = self.restart_diffusion(
+                ownership0,
+                norm_edge_index=norm_edge_index,
+                norm_edge_weight=norm_edge_weight,
+            )
+        else:
+            assert self.edge_scorer is not None
+            edge_weights, composition_info = self._composition_weights(ownership0, edge_index)
+            if self.variant == "comp_uniform":
+                ownership2 = self.restart_diffusion(
+                    ownership0,
+                    norm_edge_index=norm_edge_index,
+                    norm_edge_weight=norm_edge_weight,
+                )
+            elif self.variant == "comp_shared":
+                shared_norm_edge_index, shared_norm_edge_weight = gcn_norm(
+                    edge_index,
+                    edge_weight=edge_weights[:, 0],
+                    num_nodes=int(x.size(0)),
+                    improved=False,
+                    add_self_loops=self.restart_diffusion.add_self_loops,
+                    flow="source_to_target",
+                    dtype=ownership0.dtype,
+                )
+                ownership2 = self.restart_diffusion(
+                    ownership0,
+                    norm_edge_index=shared_norm_edge_index,
+                    norm_edge_weight=shared_norm_edge_weight,
+                )
+            else:
+                ownership2 = self._ownership_diffusion(
+                    ownership0,
+                    edge_index,
+                    edge_weights,
+                )
         c2, pt2, pv2 = ownership2.unbind(dim=1)
         u = self.fusion(torch.cat([c2, pt2, pv2], dim=-1))
         states.update({"C2": c2, "Pt2": pt2, "Pv2": pv2, "u": u})
+        states.update(composition_info)
+        if self.variant in {"comp_uniform", "comp_shared", "comp_ownership"}:
+            if self.variant == "comp_shared":
+                shared = composition_info["edge_weight_shared"]
+                states.update(
+                    {
+                        "edge_weight_C": shared,
+                        "edge_weight_Pt": shared,
+                        "edge_weight_Pv": shared,
+                    }
+                )
+            else:
+                factor_weights = (
+                    states["edge_scores"].new_ones((edge_index.size(1), 3))
+                    if self.variant == "comp_uniform"
+                    else 1.0
+                    + self.composition_strength
+                    * torch.tanh(states["edge_scores"] / self.composition_temperature)
+                )
+                states.update(
+                    {
+                        "edge_weight_C": factor_weights[:, 0],
+                        "edge_weight_Pt": factor_weights[:, 1],
+                        "edge_weight_Pv": factor_weights[:, 2],
+                    }
+                )
         return factors, states, self._refine(u)
 
     def _orth_loss(self, c: torch.Tensor, p: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -249,7 +390,7 @@ class Model(nn.Module):
         self.eval()
         if device is None:
             device = next(self.parameters()).device
-        if self.variant in {"joint_rd", "ownership_rd"}:
+        if self.variant in {"joint_rd", "ownership_rd", "comp_uniform", "comp_shared", "comp_ownership"}:
             edge_index = self._edge_index_or_empty(edge_index, device)
             z, _, _, _, _ = self.forward(x.to(device), edge_index)
             return z.detach().cpu()
@@ -311,3 +452,28 @@ class Model(nn.Module):
             chunks["p_v"].append(factors["p_v"].cpu())
             chunks["z_local"].append(z.cpu())
         return {key: torch.cat(chunks[key], dim=0) for key in keys}
+
+    @torch.no_grad()
+    def edge_aux_stats(
+        self,
+        x: torch.Tensor,
+        edge_index: torch.Tensor | None = None,
+        device: torch.device | None = None,
+    ) -> dict[str, torch.Tensor]:
+        """Return static original-edge composition diagnostics on CPU."""
+        if self.variant not in {"comp_uniform", "comp_shared", "comp_ownership"}:
+            raise RuntimeError(f"edge composition diagnostics unavailable for {self.variant!r}")
+        self.eval()
+        if device is None:
+            device = next(self.parameters()).device
+        edge_index = self._edge_index_or_empty(edge_index, device)
+        _, states, _ = self._variant_encoding(x.to(device), edge_index)
+        src, dst = edge_index
+        return {
+            "src": src.detach().cpu(),
+            "dst": dst.detach().cpu(),
+            "edge_scores": states["edge_scores"].detach().cpu(),
+            "edge_weight_C": states["edge_weight_C"].detach().cpu(),
+            "edge_weight_Pt": states["edge_weight_Pt"].detach().cpu(),
+            "edge_weight_Pv": states["edge_weight_Pv"].detach().cpu(),
+        }

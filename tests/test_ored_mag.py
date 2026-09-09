@@ -6,7 +6,11 @@ import torch
 from omegaconf import OmegaConf
 
 from src.models.map_mag_v2 import MAPMAGV2
-from src.models.ored_components import RestartDiffusion, normalize_restart_adjacency
+from src.models.ored_components import (
+    OwnershipEdgeScorer,
+    RestartDiffusion,
+    normalize_restart_adjacency,
+)
 from src.models.ored_mag import Model
 
 
@@ -295,3 +299,144 @@ def test_encode_ored_states_contains_variant_states() -> None:
     ownership = make_model("ownership_rd").eval().encode_ored_states(x, edge_index)
     assert {"C0", "Pt0", "Pv0", "joint0", "joint2", "z"}.issubset(joint)
     assert {"C0", "Pt0", "Pv0", "C2", "Pt2", "Pv2", "u", "z"}.issubset(ownership)
+
+
+O3A_VARIANTS = ("comp_uniform", "comp_shared", "comp_ownership")
+
+
+def _load_parent_state(child: Model, parent: Model) -> None:
+    missing, unexpected = child.load_state_dict(parent.state_dict(), strict=False)
+    assert unexpected == []
+    assert all(name.startswith("edge_scorer.") for name in missing)
+
+
+def test_o3a_parameter_and_state_dict_parity() -> None:
+    models = [make_model(variant) for variant in O3A_VARIANTS]
+    counts = [sum(parameter.numel() for parameter in model.parameters()) for model in models]
+    assert len(set(counts)) == 1
+    assert [tuple(model.state_dict()) for model in models].count(tuple(models[0].state_dict())) == 3
+    assert all(model.edge_scorer is not None for model in models)
+
+
+def test_o3a_zero_score_parent_initialization_parity() -> None:
+    x, edge_index = make_inputs()
+    torch.manual_seed(101)
+    parent = make_model("ownership_rd").eval()
+    parent_output = parent(x, edge_index)[0]
+    for variant in O3A_VARIANTS:
+        torch.manual_seed(303)
+        model = make_model(variant).eval()
+        _load_parent_state(model, parent)
+        output = model(x, edge_index)[0]
+        torch.testing.assert_close(output, parent_output, rtol=0.0, atol=0.0)
+
+
+def test_o3a_edge_weights_are_bounded_and_zero_score_is_exact_identity() -> None:
+    x, edge_index = make_inputs()
+    for variant in O3A_VARIANTS:
+        model = make_model(variant).eval()
+        states = model.encode_ored_states(x, edge_index)
+        assert torch.equal(states["edge_scores"], torch.zeros_like(states["edge_scores"]))
+        for key in ("edge_weight_C", "edge_weight_Pt", "edge_weight_Pv"):
+            weights = states[key]
+            assert torch.all((weights >= 0.5) & (weights <= 1.5))
+            assert torch.equal(weights, torch.ones_like(weights))
+
+
+def test_o3a_shared_composition_uses_one_weight_for_all_factors() -> None:
+    model = make_model("comp_shared").eval()
+    with torch.no_grad():
+        model.edge_scorer.score_out.weight.fill_(0.1)
+        model.edge_scorer.score_out.bias.fill_(0.2)
+    states = model.encode_ored_states(*make_inputs())
+    torch.testing.assert_close(states["edge_weight_C"], states["edge_weight_Pt"])
+    torch.testing.assert_close(states["edge_weight_C"], states["edge_weight_Pv"])
+
+
+def test_o3a_ownership_composition_can_separate_factors() -> None:
+    model = make_model("comp_ownership").eval()
+    with torch.no_grad():
+        model.edge_scorer.query.weight.zero_()
+        model.edge_scorer.key.weight.zero_()
+        model.edge_scorer.ownership_embedding.zero_()
+        model.edge_scorer.ownership_embedding[:, 0] = torch.tensor([-2.0, 0.0, 2.0])
+        model.edge_scorer.score_out.weight.zero_()
+        model.edge_scorer.score_out.weight[0, 0] = 1.0
+        model.edge_scorer.score_out.bias.zero_()
+    states = model.encode_ored_states(*make_inputs())
+    assert not torch.allclose(states["edge_weight_C"], states["edge_weight_Pt"])
+    assert not torch.allclose(states["edge_weight_Pt"], states["edge_weight_Pv"])
+
+
+def test_o3a_no_cross_factor_payload_transport_with_fixed_scores() -> None:
+    model = make_model("comp_ownership").eval()
+    x, edge_index = make_inputs()
+    factors, _ = model._encode_local(x)
+    ownership0 = torch.stack([factors["c"], factors["p_t"], factors["p_v"]], dim=1)
+    weights = ownership0.new_full((edge_index.size(1), 3), 1.2)
+    baseline = model._ownership_diffusion(ownership0, edge_index, weights)
+    perturbed = ownership0.clone()
+    perturbed[:, 1] += 3.0 * torch.randn_like(perturbed[:, 1])
+    changed = model._ownership_diffusion(perturbed, edge_index, weights)
+    torch.testing.assert_close(changed[:, 0], baseline[:, 0])
+    torch.testing.assert_close(changed[:, 2], baseline[:, 2])
+    assert (changed[:, 1] - baseline[:, 1]).abs().max().item() > 1e-6
+
+
+def test_o3a_scorer_has_shared_q_k_and_output_parameters() -> None:
+    scorer = make_model("comp_ownership").edge_scorer
+    assert isinstance(scorer, OwnershipEdgeScorer)
+    assert tuple(scorer.query.weight.shape) == (64, 128)
+    assert tuple(scorer.key.weight.shape) == (64, 128)
+    assert tuple(scorer.ownership_embedding.shape) == (3, 64)
+    assert tuple(scorer.score_out.weight.shape) == (1, 64)
+    names = tuple(name for name, _ in scorer.named_parameters())
+    assert names == ("ownership_embedding", "query.weight", "key.weight", "score_out.weight", "score_out.bias")
+    assert not any("factor" in name.lower() for name in names)
+
+
+def test_o3a_scorer_gradients_are_finite_and_nonzero() -> None:
+    x, edge_index = make_inputs()
+    for variant in ("comp_shared", "comp_ownership"):
+        model = make_model(variant).train()
+        z, _, _, aux_loss, _ = model(x, edge_index)
+        (z.square().mean() + aux_loss).backward()
+        gradient = model.edge_scorer.score_out.weight.grad
+        assert gradient is not None and torch.isfinite(gradient).all()
+        assert gradient.abs().sum() > 0
+
+
+def test_o3a_uniform_scorer_isolation() -> None:
+    x, edge_index = make_inputs()
+    model = make_model("comp_uniform").eval()
+    reference = model(x, edge_index)[0]
+    with torch.no_grad():
+        for parameter in model.edge_scorer.parameters():
+            parameter.normal_()
+    changed = model(x, edge_index)[0]
+    torch.testing.assert_close(changed, reference, rtol=0.0, atol=0.0)
+
+
+def test_o3a_forward_backward_and_inference_are_finite_and_exact() -> None:
+    x, edge_index = make_inputs()
+    for variant in O3A_VARIANTS:
+        model = make_model(variant).train()
+        z, _, _, aux_loss, aux_info = model(x, edge_index)
+        total = z.square().mean() + aux_loss
+        assert torch.isfinite(z).all() and torch.isfinite(aux_loss)
+        assert all(torch.isfinite(value).all() for value in aux_info.values())
+        total.backward()
+        checked_parameters = (
+            model.parameters()
+            if variant != "comp_uniform"
+            else (parameter for name, parameter in model.named_parameters() if not name.startswith("edge_scorer."))
+        )
+        assert all(
+            parameter.grad is not None and torch.isfinite(parameter.grad).all()
+            for parameter in checked_parameters
+            if parameter.requires_grad
+        )
+        model.eval()
+        forward = model(x, edge_index)[0].cpu()
+        inferred = model.inference(x, edge_index, device=torch.device("cpu"))
+        torch.testing.assert_close(forward, inferred, rtol=1e-5, atol=1e-6)
