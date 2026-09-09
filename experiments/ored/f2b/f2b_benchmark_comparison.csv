@@ -1,0 +1,12 @@
+model,mean_test_acc_pct,mean_test_macro_f1_pct,ored_minus_test_acc_pp,ored_minus_test_macro_f1_pp,source
+MLP,76.963,68.5097,3.1224166348775384,4.867755675234491,docs/nc_benchmark_results.md
+GCN,78.3416,71.0557,1.7438166348775326,2.321755675234485,docs/nc_benchmark_results.md
+GraphSAGE,79.296,71.76,0.7894166348775258,1.6174556752344813,docs/nc_benchmark_results.md
+MMGCN,79.8078,72.1041,0.27761663487753196,1.273355675234484,docs/nc_benchmark_results.md
+DGF,78.9328,67.483,1.152616634877532,5.894455675234482,docs/nc_benchmark_results.md
+LGMRec,79.851,72.8595,0.23441663487753317,0.5179556752344894,docs/nc_benchmark_results.md
+DiP,80.4806,73.8886,-0.3951833651224632,-0.5111443247655103,docs/nc_benchmark_results.md
+MAP,80.1359,73.3004,-0.05048336512247431,0.0770556752344902,docs/nc_benchmark_results.md
+MAP-v2,80.5091,74.0399,-0.4236833651224714,-0.6624443247655165,docs/nc_benchmark_results.md
+MAP-v3,80.326,73.9737,-0.24058336512246115,-0.5962443247655074,docs/nc_benchmark_results.md
+ORED-MAG,80.08541663487753,73.37745567523449,0.0,0.0,f2b frozen checkpoint evaluation

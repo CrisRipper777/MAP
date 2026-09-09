@@ -1,0 +1,178 @@
+{
+  "architecture": "ORED-MAG",
+  "variant": "f1_dual_direct",
+  "frozen_commit": "5a53d1d",
+  "frozen_tag": "ored-f2a-architecture-freeze",
+  "protocol": "checkpoint_only_exact_full_graph_nc_test",
+  "architecture_frozen_before_test": true,
+  "no_test_driven_tuning": true,
+  "no_test_driven_model_selection": true,
+  "no_ensemble": true,
+  "no_seed_filtering": true,
+  "num_evaluations": 15,
+  "mean_test_accuracy_pct": 80.08541663487753,
+  "mean_test_macro_f1_pct": 73.37745567523449,
+  "performance_tier": "TIER_B",
+  "datasets": [
+    {
+      "dataset": "Movies",
+      "seeds": 3,
+      "mean_val_acc_pct": 57.508498430252075,
+      "std_val_acc_pct": 0.37966100883635395,
+      "mean_val_macro_f1_pct": 51.272583895513776,
+      "std_val_macro_f1_pct": 0.6150721969032272,
+      "mean_test_acc_pct": 55.57221174240112,
+      "std_test_acc_pct": 0.25127042955073636,
+      "mean_test_macro_f1_pct": 49.8038331918915,
+      "std_test_macro_f1_pct": 1.4062100819790055,
+      "mean_test_minus_val_acc_pp": -1.9362866878509521,
+      "std_test_minus_val_acc_pp": 0.6276532184358773
+    },
+    {
+      "dataset": "Toys",
+      "seeds": 3,
+      "mean_val_acc_pct": 80.22871812184651,
+      "std_val_acc_pct": 0.21093413563228955,
+      "mean_val_macro_f1_pct": 77.6359170669157,
+      "std_val_macro_f1_pct": 0.23851804338812796,
+      "mean_test_acc_pct": 79.89047368367513,
+      "std_test_acc_pct": 0.3243462663612673,
+      "mean_test_macro_f1_pct": 77.17241386814702,
+      "std_test_macro_f1_pct": 0.3133882632719453,
+      "mean_test_minus_val_acc_pp": -0.3382444381713867,
+      "std_test_minus_val_acc_pp": 0.5340865848136083
+    },
+    {
+      "dataset": "Grocery",
+      "seeds": 3,
+      "mean_val_acc_pct": 82.95754194259644,
+      "std_val_acc_pct": 0.3162879040155623,
+      "mean_val_macro_f1_pct": 74.88406089357069,
+      "std_val_macro_f1_pct": 0.757063533190938,
+      "mean_test_acc_pct": 82.05954233805339,
+      "std_test_acc_pct": 0.5326607351475922,
+      "mean_test_macro_f1_pct": 73.44766174111791,
+      "std_test_macro_f1_pct": 0.9467563657171263,
+      "mean_test_minus_val_acc_pp": -0.8979996045430502,
+      "std_test_minus_val_acc_pp": 0.687292743099689
+    },
+    {
+      "dataset": "ele-fashion",
+      "seeds": 3,
+      "mean_val_acc_pct": 87.19102740287781,
+      "std_val_acc_pct": 0.22351637140664846,
+      "mean_val_macro_f1_pct": 73.81659515630857,
+      "std_val_macro_f1_pct": 0.4501631498619491,
+      "mean_test_acc_pct": 87.07807660102844,
+      "std_test_acc_pct": 0.21686958201553067,
+      "mean_test_macro_f1_pct": 74.74474009042312,
+      "std_test_macro_f1_pct": 0.6391943050870623,
+      "mean_test_minus_val_acc_pp": -0.11295080184936523,
+      "std_test_minus_val_acc_pp": 0.012755160946069054
+    },
+    {
+      "dataset": "Reddit-S",
+      "seeds": 3,
+      "mean_val_acc_pct": 95.82678079605103,
+      "std_val_acc_pct": 0.11581432624424928,
+      "mean_val_macro_f1_pct": 91.91938647692557,
+      "std_val_macro_f1_pct": 0.18047474537706362,
+      "mean_test_acc_pct": 95.82677880922954,
+      "std_test_acc_pct": 0.23163117078227108,
+      "mean_test_macro_f1_pct": 91.71862948459291,
+      "std_test_macro_f1_pct": 0.3856085079675708,
+      "mean_test_minus_val_acc_pp": -1.986821492513021e-06,
+      "std_test_minus_val_acc_pp": 0.11769995113291515
+    }
+  ],
+  "benchmark_comparison": [
+    {
+      "model": "MLP",
+      "mean_test_acc_pct": 76.963,
+      "mean_test_macro_f1_pct": 68.5097,
+      "ored_minus_test_acc_pp": 3.1224166348775384,
+      "ored_minus_test_macro_f1_pp": 4.867755675234491,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "GCN",
+      "mean_test_acc_pct": 78.3416,
+      "mean_test_macro_f1_pct": 71.0557,
+      "ored_minus_test_acc_pp": 1.7438166348775326,
+      "ored_minus_test_macro_f1_pp": 2.321755675234485,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "GraphSAGE",
+      "mean_test_acc_pct": 79.296,
+      "mean_test_macro_f1_pct": 71.76,
+      "ored_minus_test_acc_pp": 0.7894166348775258,
+      "ored_minus_test_macro_f1_pp": 1.6174556752344813,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "MMGCN",
+      "mean_test_acc_pct": 79.8078,
+      "mean_test_macro_f1_pct": 72.1041,
+      "ored_minus_test_acc_pp": 0.27761663487753196,
+      "ored_minus_test_macro_f1_pp": 1.273355675234484,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "DGF",
+      "mean_test_acc_pct": 78.9328,
+      "mean_test_macro_f1_pct": 67.483,
+      "ored_minus_test_acc_pp": 1.152616634877532,
+      "ored_minus_test_macro_f1_pp": 5.894455675234482,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "LGMRec",
+      "mean_test_acc_pct": 79.851,
+      "mean_test_macro_f1_pct": 72.8595,
+      "ored_minus_test_acc_pp": 0.23441663487753317,
+      "ored_minus_test_macro_f1_pp": 0.5179556752344894,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "DiP",
+      "mean_test_acc_pct": 80.4806,
+      "mean_test_macro_f1_pct": 73.8886,
+      "ored_minus_test_acc_pp": -0.3951833651224632,
+      "ored_minus_test_macro_f1_pp": -0.5111443247655103,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "MAP",
+      "mean_test_acc_pct": 80.1359,
+      "mean_test_macro_f1_pct": 73.3004,
+      "ored_minus_test_acc_pp": -0.05048336512247431,
+      "ored_minus_test_macro_f1_pp": 0.0770556752344902,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "MAP-v2",
+      "mean_test_acc_pct": 80.5091,
+      "mean_test_macro_f1_pct": 74.0399,
+      "ored_minus_test_acc_pp": -0.4236833651224714,
+      "ored_minus_test_macro_f1_pp": -0.6624443247655165,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "MAP-v3",
+      "mean_test_acc_pct": 80.326,
+      "mean_test_macro_f1_pct": 73.9737,
+      "ored_minus_test_acc_pp": -0.24058336512246115,
+      "ored_minus_test_macro_f1_pp": -0.5962443247655074,
+      "source": "docs/nc_benchmark_results.md"
+    },
+    {
+      "model": "ORED-MAG",
+      "mean_test_acc_pct": 80.08541663487753,
+      "mean_test_macro_f1_pct": 73.37745567523449,
+      "ored_minus_test_acc_pp": 0.0,
+      "ored_minus_test_macro_f1_pp": 0.0,
+      "source": "f2b frozen checkpoint evaluation"
+    }
+  ]
+}
