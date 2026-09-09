@@ -50,6 +50,18 @@
     的 factor-wise weight differentiation 只是 descriptive evidence，不等于
     performance superiority。
 
+11. **ORED-F1 dual-granularity relational context is viable but not promoted.**
+    `f1_dual_direct − f1_owner` 的宏平均 paired ΔAcc/ΔMacro-F1 为
+    `+0.047/+0.601 pp`；joint branch 的 graph update 在所有 formal runs 中
+    非零且 finite。它提供了小幅、可解释的正向 headroom，但尚未满足完整
+    OCB 的 promotion 条件。
+
+12. **ORED-F1 Ownership-Constrained Bridge is NOT YET SUPPORTED as a final
+    core gain.** `f1_dual_ocb − f1_owner` 的宏平均 paired ΔAcc/ΔMacro-F1 为
+    `+0.068/+0.262 pp`，三个数据集的 mean Acc 都为正，bridge 也确实学到非零
+    strength；但没有任何数据集的 mean contrast 达到 `+0.30 Acc` 或 `+0.50
+    Macro-F1` headroom。因此当前结论是 `HOLD_REVIEW`，不是实现失败或训练不稳定。
+
 ## CLOSED / NOT TO REINTRODUCE
 
 以下方向在 ORED-MAG 主线中关闭，不能作为默认核心重新引入：
@@ -70,6 +82,10 @@
 1. Ownership-conditioned Exposure
 2. Exposure × Composition
 3. same-node cross-factor conditioning without cross-factor transport
+
+ORED-F1 已关闭“在没有额外可解释 headroom 时直接把 dual-granularity/OCB
+升级为最终默认核心”的路径；如继续推进，应由研究者决定一次结构级修正或保持
+`f1_owner` parent，不得把当前小幅正向差值写成已支持的普适增益。
 
 ORED-3A 已关闭“将 generic/ownership-conditioned Composition 作为默认核心”的
 升级路径；composition 相关权重诊断仍可作为后续分析材料，但不能作为已支持机制。

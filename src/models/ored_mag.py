@@ -7,6 +7,7 @@ from torch_geometric.nn.conv.gcn_conv import gcn_norm
 
 from .common import get_activation, make_norm
 from .ored_components import (
+    JointFusion,
     OwnershipEdgeScorer,
     ReconstructionHead,
     RestartDiffusion,
@@ -35,6 +36,9 @@ class Model(nn.Module):
             "comp_uniform",
             "comp_shared",
             "comp_ownership",
+            "f1_owner",
+            "f1_dual_direct",
+            "f1_dual_ocb",
         }
         if variant not in valid_variants:
             raise ValueError(
@@ -85,6 +89,12 @@ class Model(nn.Module):
         self.output_norm = None
         self.restart_diffusion = None
         self.edge_scorer = None
+        self.joint_fusion = None
+        self.joint_projection = None
+        self.bridge_gate = None
+        self.bridge_ownership_embedding = None
+        self.factor_bridge_norms = None
+        self.bridge_raw = None
         if variant != "p0":
             self.output_mlp = nn.Sequential(
                 nn.Linear(hidden_dim, hidden_dim),
@@ -105,6 +115,43 @@ class Model(nn.Module):
                     factor_dim,
                     int(cfg.model.get("score_hidden_dim", 64)),
                 )
+            if variant in {"f1_owner", "f1_dual_direct", "f1_dual_ocb"}:
+                # F1 keeps every dual-granularity module present in every
+                # matched variant.  The owner control is made independent of
+                # these modules in _f1_encoding, while direct/OCB activate
+                # them through the bridge path.
+                self.joint_fusion = JointFusion(
+                    factor_dim,
+                    hidden_dim,
+                    dropout,
+                    activation,
+                    norm,
+                )
+                self.joint_projection = nn.ModuleList(
+                    [nn.Linear(hidden_dim, factor_dim) for _ in range(3)]
+                )
+                bridge_gate_hidden = int(cfg.model.get("bridge_gate_hidden_dim", 128))
+                bridge_ownership_dim = int(cfg.model.get("bridge_ownership_dim", 16))
+                if bridge_gate_hidden <= 0 or bridge_ownership_dim <= 0:
+                    raise ValueError(
+                        "F1 bridge dimensions must be positive, got "
+                        f"gate_hidden={bridge_gate_hidden}, ownership_dim={bridge_ownership_dim}"
+                    )
+                self.bridge_ownership_embedding = nn.Parameter(
+                    torch.empty(3, bridge_ownership_dim)
+                )
+                self.bridge_gate = nn.Sequential(
+                    nn.Linear(4 * factor_dim + bridge_ownership_dim, bridge_gate_hidden),
+                    get_activation(activation),
+                    nn.Linear(bridge_gate_hidden, 1),
+                )
+                # These norms are instantiated for parameter parity.  The
+                # bridge update is deliberately bypassable at alpha=0; the
+                # raw projected joint states are used in the update formula.
+                self.factor_bridge_norms = nn.ModuleList(
+                    [nn.LayerNorm(factor_dim) for _ in range(3)]
+                )
+                self.bridge_raw = nn.Parameter(torch.zeros(()))
 
         # These are fixed by the ORED-3A protocol; reject accidental tuning.
         self.composition_strength = float(cfg.model.get("composition_strength", 0.5))
@@ -207,6 +254,138 @@ class Model(nn.Module):
             )
         return torch.stack(outputs, dim=1)
 
+    @staticmethod
+    def _relative_update(after: torch.Tensor, before: torch.Tensor) -> torch.Tensor:
+        return (
+            (after - before).norm(dim=-1)
+            / (before.norm(dim=-1) + torch.finfo(before.dtype).eps)
+        ).mean()
+
+    @staticmethod
+    def _mean_cosine(after: torch.Tensor, before: torch.Tensor) -> torch.Tensor:
+        return F.cosine_similarity(before, after, dim=-1).mean()
+
+    def _f1_encoding(
+        self,
+        x: torch.Tensor,
+        edge_index: torch.Tensor | None,
+    ) -> tuple[dict[str, torch.Tensor], dict[str, torch.Tensor], torch.Tensor]:
+        """Encode the F1 matched controls and dual-granularity bridge."""
+        assert self.restart_diffusion is not None
+        assert self.joint_fusion is not None
+        assert self.joint_projection is not None
+        assert self.bridge_gate is not None
+        assert self.bridge_ownership_embedding is not None
+        assert self.factor_bridge_norms is not None
+        assert self.bridge_raw is not None
+
+        factors, z_local = self._encode_local(x)
+        c0, pt0, pv0 = factors["c"], factors["p_t"], factors["p_v"]
+        edge_index = self._edge_index_or_empty(edge_index, x.device)
+        norm_edge_index, norm_edge_weight = normalize_restart_adjacency(
+            edge_index,
+            num_nodes=int(x.size(0)),
+            dtype=z_local.dtype,
+            add_self_loops=self.restart_diffusion.add_self_loops,
+        )
+
+        ownership0 = torch.stack([c0, pt0, pv0], dim=1)
+        ownership_g = self.restart_diffusion(
+            ownership0,
+            norm_edge_index=norm_edge_index,
+            norm_edge_weight=norm_edge_weight,
+        )
+
+        # Compute the joint branch for every F1 variant so the state API and
+        # parameter layout are matched.  f1_owner never uses its result.
+        joint0 = self.joint_fusion(c0, pt0, pv0)
+        joint_g = self.restart_diffusion(
+            joint0,
+            norm_edge_index=norm_edge_index,
+            norm_edge_weight=norm_edge_weight,
+        )
+        projected = torch.stack(
+            [projection(joint_g) for projection in self.joint_projection], dim=1
+        )
+
+        alpha = 0.5 * torch.tanh(self.bridge_raw)
+        if self.variant == "f1_owner":
+            gates = projected.new_ones((projected.size(0), 3, 1))
+            alpha_effective = projected.new_zeros(())
+        elif self.variant == "f1_dual_direct":
+            gates = projected.new_ones((projected.size(0), 3, 1))
+            alpha_effective = alpha
+        elif self.variant == "f1_dual_ocb":
+            gate_values: list[torch.Tensor] = []
+            for factor in range(3):
+                h_factor = ownership_g[:, factor]
+                g_factor = projected[:, factor]
+                gate_input = torch.cat(
+                    [
+                        h_factor,
+                        g_factor,
+                        (h_factor - g_factor).abs(),
+                        h_factor * g_factor,
+                        self.bridge_ownership_embedding[factor]
+                        .to(dtype=h_factor.dtype)
+                        .unsqueeze(0)
+                        .expand(h_factor.size(0), -1),
+                    ],
+                    dim=-1,
+                )
+                gate_values.append(torch.sigmoid(self.bridge_gate(gate_input)))
+            gates = torch.stack(gate_values, dim=1)
+            alpha_effective = alpha
+        else:
+            raise RuntimeError(f"F1 encoding requested for {self.variant!r}")
+
+        # The factor bridge norms remain bypassable because alpha multiplies
+        # the complete update.  This keeps all variants parameter-matched
+        # without changing the owner representation at alpha=0.
+        deltas = torch.stack(
+            [
+                gates[:, factor]
+                * self.factor_bridge_norms[factor](projected[:, factor])
+                for factor in range(3)
+            ],
+            dim=1,
+        )
+        ownership_star = ownership_g + alpha_effective * deltas
+        c_star, pt_star, pv_star = ownership_star.unbind(dim=1)
+        u = self.fusion(torch.cat([c_star, pt_star, pv_star], dim=-1))
+        z = self._refine(u)
+
+        states: dict[str, torch.Tensor] = {
+            "C0": c0,
+            "Pt0": pt0,
+            "Pv0": pv0,
+            "z_local": z_local,
+            "CG": ownership_g[:, 0],
+            "PtG": ownership_g[:, 1],
+            "PvG": ownership_g[:, 2],
+            "joint0": joint0,
+            "jointG": joint_g,
+            "GC": projected[:, 0],
+            "GPt": projected[:, 1],
+            "GPv": projected[:, 2],
+            "C_star": c_star,
+            "Pt_star": pt_star,
+            "Pv_star": pv_star,
+            "u": u,
+            "z": z,
+            "bridge_alpha": alpha_effective,
+            "bridge_gate_c": gates[:, 0],
+            "bridge_gate_pt": gates[:, 1],
+            "bridge_gate_pv": gates[:, 2],
+        }
+        states["joint_graph_update_ratio"] = self._relative_update(joint_g, joint0)
+        states["joint_graph_cosine"] = self._mean_cosine(joint_g, joint0)
+        for factor, name in enumerate(("c", "pt", "pv")):
+            states[f"bridge_update_ratio_{name}"] = self._relative_update(
+                ownership_star[:, factor], ownership_g[:, factor]
+            )
+        return factors, states, z
+
     def _variant_encoding(
         self,
         x: torch.Tensor,
@@ -225,6 +404,9 @@ class Model(nn.Module):
             return factors, states, z_local
         if self.variant == "p0_refine":
             return factors, states, self._refine(z_local)
+
+        if self.variant in {"f1_owner", "f1_dual_direct", "f1_dual_ocb"}:
+            return self._f1_encoding(x, edge_index)
 
         assert self.restart_diffusion is not None
         edge_index = self._edge_index_or_empty(edge_index, x.device)
@@ -371,12 +553,29 @@ class Model(nn.Module):
         return aux_loss, aux_info
 
     def forward(self, x: torch.Tensor, edge_index=None):
-        factors, _, z = self._variant_encoding(x, edge_index)
+        factors, states, z = self._variant_encoding(x, edge_index)
         if self.training:
             aux_loss, aux_info = self._compute_aux(factors)
         else:
             aux_loss = z.new_tensor(0.0)
             aux_info = {}
+        if self.variant in {"f1_owner", "f1_dual_direct", "f1_dual_ocb"}:
+            aux_info.update(
+                {
+                    "mean_bridge_alpha": states["bridge_alpha"].detach(),
+                    "mean_bridge_gate_c": states["bridge_gate_c"].mean().detach(),
+                    "mean_bridge_gate_pt": states["bridge_gate_pt"].mean().detach(),
+                    "mean_bridge_gate_pv": states["bridge_gate_pv"].mean().detach(),
+                    "std_bridge_gate_c": states["bridge_gate_c"].std(unbiased=False).detach(),
+                    "std_bridge_gate_pt": states["bridge_gate_pt"].std(unbiased=False).detach(),
+                    "std_bridge_gate_pv": states["bridge_gate_pv"].std(unbiased=False).detach(),
+                    "joint_graph_update_ratio": states["joint_graph_update_ratio"].detach(),
+                    "joint_graph_cosine": states["joint_graph_cosine"].detach(),
+                    "bridge_update_ratio_c": states["bridge_update_ratio_c"].detach(),
+                    "bridge_update_ratio_pt": states["bridge_update_ratio_pt"].detach(),
+                    "bridge_update_ratio_pv": states["bridge_update_ratio_pv"].detach(),
+                }
+            )
         return z, None, None, aux_loss, aux_info
 
     @torch.no_grad()
@@ -390,7 +589,16 @@ class Model(nn.Module):
         self.eval()
         if device is None:
             device = next(self.parameters()).device
-        if self.variant in {"joint_rd", "ownership_rd", "comp_uniform", "comp_shared", "comp_ownership"}:
+        if self.variant in {
+            "joint_rd",
+            "ownership_rd",
+            "comp_uniform",
+            "comp_shared",
+            "comp_ownership",
+            "f1_owner",
+            "f1_dual_direct",
+            "f1_dual_ocb",
+        }:
             edge_index = self._edge_index_or_empty(edge_index, device)
             z, _, _, _, _ = self.forward(x.to(device), edge_index)
             return z.detach().cpu()

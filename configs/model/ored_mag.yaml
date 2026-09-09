@@ -9,6 +9,8 @@ diffusion_add_self_loops: true
 score_hidden_dim: 64
 composition_strength: 0.5
 composition_temperature: 1.0
+bridge_gate_hidden_dim: 128
+bridge_ownership_dim: 16
 activation: gelu
 norm: layernorm
 lambda_common: 0.02

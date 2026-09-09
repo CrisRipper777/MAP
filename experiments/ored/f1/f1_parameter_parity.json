@@ -1,0 +1,88 @@
+{
+  "variants": [
+    "f1_owner",
+    "f1_dual_direct",
+    "f1_dual_ocb"
+  ],
+  "matched_modules": [
+    "SemanticFactorizer",
+    "OwnershipDiffusion",
+    "JointFusion",
+    "JointDiffusion",
+    "W_C/W_Pt/W_Pv",
+    "ownership_embedding",
+    "shared_gate_mlp",
+    "bridge_raw",
+    "factor_bridge_norms",
+    "LateFusion",
+    "OutputMLP",
+    "OutputNorm",
+    "P0 auxiliary loss"
+  ],
+  "construction_order_matched": true,
+  "per_dataset": {
+    "Movies": {
+      "model_params": {
+        "f1_owner": 1436594,
+        "f1_dual_direct": 1436594,
+        "f1_dual_ocb": 1436594
+      },
+      "head_params": {
+        "f1_owner": 5140,
+        "f1_dual_direct": 5140,
+        "f1_dual_ocb": 5140
+      },
+      "total_params": {
+        "f1_owner": 1441734,
+        "f1_dual_direct": 1441734,
+        "f1_dual_ocb": 1441734
+      },
+      "model_parameter_parity": true,
+      "head_parameter_parity": true,
+      "total_parameter_parity": true
+    },
+    "Toys": {
+      "model_params": {
+        "f1_owner": 1436594,
+        "f1_dual_direct": 1436594,
+        "f1_dual_ocb": 1436594
+      },
+      "head_params": {
+        "f1_owner": 4626,
+        "f1_dual_direct": 4626,
+        "f1_dual_ocb": 4626
+      },
+      "total_params": {
+        "f1_owner": 1441220,
+        "f1_dual_direct": 1441220,
+        "f1_dual_ocb": 1441220
+      },
+      "model_parameter_parity": true,
+      "head_parameter_parity": true,
+      "total_parameter_parity": true
+    },
+    "Grocery": {
+      "model_params": {
+        "f1_owner": 1436594,
+        "f1_dual_direct": 1436594,
+        "f1_dual_ocb": 1436594
+      },
+      "head_params": {
+        "f1_owner": 5140,
+        "f1_dual_direct": 5140,
+        "f1_dual_ocb": 5140
+      },
+      "total_params": {
+        "f1_owner": 1441734,
+        "f1_dual_direct": 1441734,
+        "f1_dual_ocb": 1441734
+      },
+      "model_parameter_parity": true,
+      "head_parameter_parity": true,
+      "total_parameter_parity": true
+    }
+  },
+  "all_model_parameter_parity": true,
+  "all_head_parameter_parity": true,
+  "all_total_parameter_parity": true
+}

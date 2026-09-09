@@ -230,3 +230,31 @@ class ReconstructionHead(nn.Module):
 
     def forward(self, c_mod: torch.Tensor, p_mod: torch.Tensor) -> torch.Tensor:
         return self.net(torch.cat([c_mod, p_mod], dim=-1))
+
+
+class JointFusion(nn.Module):
+    """Fuse the three local ownership states into one joint graph stream."""
+
+    def __init__(
+        self,
+        factor_dim: int,
+        hidden_dim: int,
+        dropout: float = 0.2,
+        activation: str = "gelu",
+        norm: str = "layernorm",
+    ) -> None:
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(3 * int(factor_dim), int(hidden_dim)),
+            make_norm(norm, int(hidden_dim)),
+            get_activation(activation),
+            nn.Dropout(float(dropout)),
+        )
+
+    def forward(
+        self,
+        common: torch.Tensor,
+        private_text: torch.Tensor,
+        private_visual: torch.Tensor,
+    ) -> torch.Tensor:
+        return self.net(torch.cat([common, private_text, private_visual], dim=-1))

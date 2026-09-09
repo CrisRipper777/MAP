@@ -440,3 +440,156 @@ def test_o3a_forward_backward_and_inference_are_finite_and_exact() -> None:
         forward = model(x, edge_index)[0].cpu()
         inferred = model.inference(x, edge_index, device=torch.device("cpu"))
         torch.testing.assert_close(forward, inferred, rtol=1e-5, atol=1e-6)
+
+
+F1_VARIANTS = ("f1_owner", "f1_dual_direct", "f1_dual_ocb")
+
+
+def _load_f1_state(child: Model, source: Model) -> None:
+    child.load_state_dict(source.state_dict(), strict=True)
+
+
+def test_f1_parameter_and_state_dict_parity() -> None:
+    models = [make_model(variant) for variant in F1_VARIANTS]
+    counts = [sum(parameter.numel() for parameter in model.parameters()) for model in models]
+    assert len(set(counts)) == 1
+    names = [tuple(model.state_dict()) for model in models]
+    assert names[0] == names[1] == names[2]
+    assert all(model.joint_fusion is not None for model in models)
+    assert all(model.joint_projection is not None for model in models)
+    assert all(model.factor_bridge_norms is not None for model in models)
+
+
+def test_f1_zero_bridge_is_exact_parent_parity() -> None:
+    x, edge_index = make_inputs()
+    torch.manual_seed(123)
+    owner = make_model("f1_owner").eval()
+    reference = owner(x, edge_index)[0]
+    for variant in ("f1_dual_direct", "f1_dual_ocb"):
+        candidate = make_model(variant).eval()
+        _load_f1_state(candidate, owner)
+        output = candidate(x, edge_index)[0]
+        torch.testing.assert_close(output, reference, rtol=0.0, atol=0.0)
+    assert owner.bridge_raw is not None and owner.bridge_raw.item() == 0.0
+
+
+def test_f1_owner_isolates_joint_and_bridge_parameters() -> None:
+    x, edge_index = make_inputs()
+    model = make_model("f1_owner").eval()
+    reference = model(x, edge_index)[0]
+    with torch.no_grad():
+        for name, parameter in model.named_parameters():
+            if name.startswith(("joint_fusion.", "joint_projection.", "bridge_")) or name.startswith("factor_bridge_norms."):
+                parameter.normal_()
+    changed = model(x, edge_index)[0]
+    torch.testing.assert_close(changed, reference, rtol=0.0, atol=0.0)
+
+
+def test_f1_direct_ignores_learned_gate() -> None:
+    x, edge_index = make_inputs()
+    model = make_model("f1_dual_direct").eval()
+    with torch.no_grad():
+        model.bridge_raw.fill_(0.25)
+    reference = model(x, edge_index)[0]
+    with torch.no_grad():
+        for parameter in model.bridge_gate.parameters():
+            parameter.normal_()
+        model.bridge_ownership_embedding.normal_()
+    changed = model(x, edge_index)[0]
+    torch.testing.assert_close(changed, reference, rtol=0.0, atol=0.0)
+
+
+def test_f1_ocb_gate_changes_output_when_bridge_is_active() -> None:
+    x, edge_index = make_inputs()
+    model = make_model("f1_dual_ocb").eval()
+    with torch.no_grad():
+        model.bridge_raw.fill_(0.25)
+    reference = model(x, edge_index)[0]
+    with torch.no_grad():
+        model.bridge_gate[-1].bias.add_(2.0)
+    changed = model(x, edge_index)[0]
+    assert (changed - reference).abs().max().item() > 1e-7
+
+
+def test_f1_joint_branch_is_graph_sensitive_and_ownership_is_factor_local() -> None:
+    x, edge_index = make_inputs()
+    empty = torch.empty((2, 0), dtype=torch.long)
+    model = make_model("f1_dual_ocb").eval()
+    empty_states = model.encode_ored_states(x, empty)
+    graph_states = model.encode_ored_states(x, edge_index)
+    assert (graph_states["jointG"] - empty_states["jointG"]).abs().max().item() > 1e-7
+
+    factors, _ = model._encode_local(x)
+    ownership0 = torch.stack([factors["c"], factors["p_t"], factors["p_v"]], dim=1)
+    norm_ei, norm_ew = normalize_restart_adjacency(edge_index, N, ownership0.dtype, True)
+    baseline = model.restart_diffusion(ownership0, norm_edge_index=norm_ei, norm_edge_weight=norm_ew)
+    perturbed = ownership0.clone()
+    perturbed[:, 1] += 3.0 * torch.randn_like(perturbed[:, 1])
+    changed = model.restart_diffusion(perturbed, norm_edge_index=norm_ei, norm_edge_weight=norm_ew)
+    torch.testing.assert_close(changed[:, 0], baseline[:, 0])
+    torch.testing.assert_close(changed[:, 2], baseline[:, 2])
+    assert (changed[:, 1] - baseline[:, 1]).abs().max().item() > 1e-6
+
+
+def test_f1_projection_gate_and_alpha_bounds() -> None:
+    x, edge_index = make_inputs()
+    model = make_model("f1_dual_ocb").eval()
+    assert [tuple(layer.weight.shape) for layer in model.joint_projection] == [(128, 256)] * 3
+    with torch.no_grad():
+        model.bridge_raw.fill_(100.0)
+    states = model.encode_ored_states(x, edge_index)
+    assert -0.5 <= float(states["bridge_alpha"]) <= 0.5
+    for key in ("bridge_gate_c", "bridge_gate_pt", "bridge_gate_pv"):
+        assert torch.all((states[key] >= 0.0) & (states[key] <= 1.0))
+    with torch.no_grad():
+        model.bridge_raw.fill_(-100.0)
+    states = model.encode_ored_states(x, edge_index)
+    assert -0.5 <= float(states["bridge_alpha"]) <= 0.5
+
+
+def test_f1_forward_backward_diagnostics_and_gradient_health() -> None:
+    x, edge_index = make_inputs()
+    for variant in F1_VARIANTS:
+        model = make_model(variant).train()
+        if variant != "f1_owner":
+            with torch.no_grad():
+                model.bridge_raw.fill_(0.25)
+        z, _, _, aux_loss, aux_info = model(x, edge_index)
+        total = z.square().mean() + aux_loss
+        assert torch.isfinite(z).all() and torch.isfinite(aux_loss)
+        required = {
+            "mean_bridge_alpha",
+            "mean_bridge_gate_c",
+            "mean_bridge_gate_pt",
+            "mean_bridge_gate_pv",
+            "std_bridge_gate_c",
+            "std_bridge_gate_pt",
+            "std_bridge_gate_pv",
+            "joint_graph_update_ratio",
+            "joint_graph_cosine",
+            "bridge_update_ratio_c",
+            "bridge_update_ratio_pt",
+            "bridge_update_ratio_pv",
+        }
+        assert required <= set(aux_info)
+        assert all(torch.isfinite(value).all() for value in aux_info.values())
+        total.backward()
+        grads = [parameter.grad for parameter in model.parameters() if parameter.grad is not None]
+        assert grads and all(torch.isfinite(grad).all() for grad in grads)
+        if variant in ("f1_dual_direct", "f1_dual_ocb"):
+            assert model.bridge_raw.grad is not None
+            assert torch.isfinite(model.bridge_raw.grad)
+            assert model.bridge_raw.grad.abs() > 0
+        if variant == "f1_dual_ocb":
+            gate_grads = [parameter.grad for parameter in model.bridge_gate.parameters()]
+            assert all(grad is not None and torch.isfinite(grad).all() for grad in gate_grads)
+            assert sum(grad.abs().sum().item() for grad in gate_grads) > 0
+
+
+def test_f1_inference_matches_eval_forward() -> None:
+    x, edge_index = make_inputs()
+    for variant in F1_VARIANTS:
+        model = make_model(variant).eval()
+        forward = model(x, edge_index)[0].cpu()
+        inferred = model.inference(x, edge_index, device=torch.device("cpu"))
+        torch.testing.assert_close(forward, inferred, rtol=1e-5, atol=1e-6)

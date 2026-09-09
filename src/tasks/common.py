@@ -43,6 +43,18 @@ AUX_INFO_KEYS = (
     "edge_reg_loss",
     "gate_loss",
     "modality_balance_loss",
+    "mean_bridge_alpha",
+    "mean_bridge_gate_c",
+    "mean_bridge_gate_pt",
+    "mean_bridge_gate_pv",
+    "std_bridge_gate_c",
+    "std_bridge_gate_pt",
+    "std_bridge_gate_pv",
+    "joint_graph_update_ratio",
+    "joint_graph_cosine",
+    "bridge_update_ratio_c",
+    "bridge_update_ratio_pt",
+    "bridge_update_ratio_pv",
 )
 
 
