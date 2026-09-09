@@ -50,17 +50,22 @@
     的 factor-wise weight differentiation 只是 descriptive evidence，不等于
     performance superiority。
 
-11. **ORED-F1 dual-granularity relational context is viable but not promoted.**
-    `f1_dual_direct − f1_owner` 的宏平均 paired ΔAcc/ΔMacro-F1 为
-    `+0.047/+0.601 pp`；joint branch 的 graph update 在所有 formal runs 中
-    非零且 finite。它提供了小幅、可解释的正向 headroom，但尚未满足完整
-    OCB 的 promotion 条件。
+11. **ORED-F2A Dual-Granularity Relational Diffusion is SELECTED FINAL CORE.**
+    Five-dataset validation-only selection of `f1_dual_direct` against `f1_owner`
+    gives macro paired ΔAcc/ΔMacro-F1 of `+0.020/+0.312 pp` over 15 matched
+    seeds. It passes the registered `-0.20 pp` macro Acc gate, has no dataset
+    with mean ΔAcc at or below `-0.80 pp`, and all 30 merged runs are stable and
+    finite.
 
-12. **ORED-F1 Ownership-Constrained Bridge is NOT YET SUPPORTED as a final
-    core gain.** `f1_dual_ocb − f1_owner` 的宏平均 paired ΔAcc/ΔMacro-F1 为
-    `+0.068/+0.262 pp`，三个数据集的 mean Acc 都为正，bridge 也确实学到非零
-    strength；但没有任何数据集的 mean contrast 达到 `+0.30 Acc` 或 `+0.50
-    Macro-F1` headroom。因此当前结论是 `HOLD_REVIEW`，不是实现失败或训练不稳定。
+12. **ORED-F2A Ownership-Projected Residual Collaboration is SELECTED FINAL
+    CORE.** The ownership-preserving branch, joint collaborative restart
+    diffusion, ownership-specific projections, and bounded residual bridge are
+    frozen as the final ORED-MAG bridge under the five-dataset result.
+
+13. **ORED-F2A OCB compatibility gate is NOT SELECTED.** F1 showed only
+    `+0.021 pp` Acc and `-0.338 pp` Macro-F1 for `f1_dual_ocb − f1_dual_direct`;
+    it provides no stable incremental benefit and is retained only as secondary
+    ablation evidence. No OCB formal rerun was performed in F2A.
 
 ## CLOSED / NOT TO REINTRODUCE
 
@@ -89,6 +94,11 @@ ORED-F1 已关闭“在没有额外可解释 headroom 时直接把 dual-granular
 
 ORED-3A 已关闭“将 generic/ownership-conditioned Composition 作为默认核心”的
 升级路径；composition 相关权重诊断仍可作为后续分析材料，但不能作为已支持机制。
+
+ORED-F2A 已冻结最终核心为 `ORED-MAG`: Semantic Ownership Decomposition,
+Dual-Granularity Relational Diffusion, and Ownership-Projected Residual
+Collaboration. `Composition` remains `CLOSED`, `Exposure` remains `NOT PURSUED`,
+and the OCB compatibility gate is `NOT SELECTED`.
 
 ## Guardrails
 

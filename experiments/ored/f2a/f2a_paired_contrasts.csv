@@ -1,0 +1,16 @@
+contrast,dataset,seed,left_variant,right_variant,delta_acc_pp,delta_macro_f1_pp
+f1_dual_direct_minus_owner,Movies,42,f1_dual_direct,f1_owner,-0.1499652862548828,3.263893384064004
+f1_dual_direct_minus_owner,Movies,43,f1_dual_direct,f1_owner,-0.14997124671936035,0.1934374898410307
+f1_dual_direct_minus_owner,Movies,44,f1_dual_direct,f1_owner,0.17996430397033691,0.9494694735052822
+f1_dual_direct_minus_owner,Toys,42,f1_dual_direct,f1_owner,0.16912221908569336,0.18746887430464154
+f1_dual_direct_minus_owner,Toys,43,f1_dual_direct,f1_owner,0.09663701057434082,0.8967429999888865
+f1_dual_direct_minus_owner,Toys,44,f1_dual_direct,f1_owner,0.04832148551940918,-0.04901826023973044
+f1_dual_direct_minus_owner,Grocery,42,f1_dual_direct,f1_owner,0.11712908744812012,-1.3575210963432505
+f1_dual_direct_minus_owner,Grocery,43,f1_dual_direct,f1_owner,0.23426413536071777,-0.009661185404230554
+f1_dual_direct_minus_owner,Grocery,44,f1_dual_direct,f1_owner,-0.11712908744812012,1.3484571881925977
+f1_dual_direct_minus_owner,ele-fashion,42,f1_dual_direct,f1_owner,-0.010228157043457031,-0.3976416015015305
+f1_dual_direct_minus_owner,ele-fashion,43,f1_dual_direct,f1_owner,-0.06136894226074219,-0.43176602782937223
+f1_dual_direct_minus_owner,ele-fashion,44,f1_dual_direct,f1_owner,-0.08182525634765625,-0.6659458002865382
+f1_dual_direct_minus_owner,Reddit-S,42,f1_dual_direct,f1_owner,0.0,-0.047249353223988155
+f1_dual_direct_minus_owner,Reddit-S,43,f1_dual_direct,f1_owner,0.0,0.4123076883664645
+f1_dual_direct_minus_owner,Reddit-S,44,f1_dual_direct,f1_owner,0.03145933151245117,0.3896708647452174

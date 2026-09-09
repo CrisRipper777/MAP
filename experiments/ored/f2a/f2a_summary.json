@@ -1,0 +1,383 @@
+{
+  "stage": "ORED-F2A",
+  "starting_sha": "901f254",
+  "starting_tag": "ored-f1-dual-prototype",
+  "protocol": "unified_full_graph_nc_v1",
+  "task": "nc",
+  "training_mode": "full_graph",
+  "evaluate_test": false,
+  "no_test": true,
+  "no_tuning": true,
+  "no_new_module": true,
+  "no_ocb_formal_rerun": true,
+  "datasets": [
+    "Movies",
+    "Toys",
+    "Grocery",
+    "ele-fashion",
+    "Reddit-S"
+  ],
+  "new_datasets": [
+    "ele-fashion",
+    "Reddit-S"
+  ],
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "variants": [
+    "f1_owner",
+    "f1_dual_direct"
+  ],
+  "run_count": 30,
+  "new_run_count": 12,
+  "stable_run_count": 30,
+  "uses_test_labels_or_metrics": false,
+  "dataset_summary": [
+    {
+      "dataset": "Movies",
+      "variant": "f1_owner",
+      "seeds": 3,
+      "mean_val_acc_pct": 57.54848917325338,
+      "std_val_acc_pct": 0.2548993769665793,
+      "mean_val_macro_f1_pct": 49.803650446377,
+      "std_val_macro_f1_pct": 1.0778422988518122,
+      "model_params": 1436594,
+      "head_params": 5140,
+      "total_params": 1441734,
+      "all_stable": true
+    },
+    {
+      "dataset": "Movies",
+      "variant": "f1_dual_direct",
+      "seeds": 3,
+      "mean_val_acc_pct": 57.508498430252075,
+      "std_val_acc_pct": 0.37966100883635395,
+      "mean_val_macro_f1_pct": 51.272583895513776,
+      "std_val_macro_f1_pct": 0.6150721969032272,
+      "model_params": 1436594,
+      "head_params": 5140,
+      "total_params": 1441734,
+      "all_stable": true
+    },
+    {
+      "dataset": "Toys",
+      "variant": "f1_owner",
+      "seeds": 3,
+      "mean_val_acc_pct": 80.12402455012004,
+      "std_val_acc_pct": 0.16777527780185555,
+      "mean_val_macro_f1_pct": 77.29085252889776,
+      "std_val_macro_f1_pct": 0.5364087670837602,
+      "model_params": 1436594,
+      "head_params": 4626,
+      "total_params": 1441220,
+      "all_stable": true
+    },
+    {
+      "dataset": "Toys",
+      "variant": "f1_dual_direct",
+      "seeds": 3,
+      "mean_val_acc_pct": 80.22871812184651,
+      "std_val_acc_pct": 0.21093413563228955,
+      "mean_val_macro_f1_pct": 77.6359170669157,
+      "std_val_macro_f1_pct": 0.23851804338812796,
+      "model_params": 1436594,
+      "head_params": 4626,
+      "total_params": 1441220,
+      "all_stable": true
+    },
+    {
+      "dataset": "Grocery",
+      "variant": "f1_owner",
+      "seeds": 3,
+      "mean_val_acc_pct": 82.8794538974762,
+      "std_val_acc_pct": 0.2033428413046257,
+      "mean_val_macro_f1_pct": 74.89030259142231,
+      "std_val_macro_f1_pct": 0.46847503959042963,
+      "model_params": 1436594,
+      "head_params": 5140,
+      "total_params": 1441734,
+      "all_stable": true
+    },
+    {
+      "dataset": "Grocery",
+      "variant": "f1_dual_direct",
+      "seeds": 3,
+      "mean_val_acc_pct": 82.95754194259644,
+      "std_val_acc_pct": 0.3162879040155623,
+      "mean_val_macro_f1_pct": 74.88406089357069,
+      "std_val_macro_f1_pct": 0.757063533190938,
+      "model_params": 1436594,
+      "head_params": 5140,
+      "total_params": 1441734,
+      "all_stable": true
+    },
+    {
+      "dataset": "ele-fashion",
+      "variant": "f1_owner",
+      "seeds": 3,
+      "mean_val_acc_pct": 87.24216818809509,
+      "std_val_acc_pct": 0.19733246291863946,
+      "mean_val_macro_f1_pct": 74.31504629951438,
+      "std_val_macro_f1_pct": 0.3441710867138562,
+      "model_params": 1305522,
+      "head_params": 3084,
+      "total_params": 1308606,
+      "all_stable": true
+    },
+    {
+      "dataset": "ele-fashion",
+      "variant": "f1_dual_direct",
+      "seeds": 3,
+      "mean_val_acc_pct": 87.19102740287781,
+      "std_val_acc_pct": 0.22351637140664846,
+      "mean_val_macro_f1_pct": 73.81659515630857,
+      "std_val_macro_f1_pct": 0.4501631498619491,
+      "model_params": 1305522,
+      "head_params": 3084,
+      "total_params": 1308606,
+      "all_stable": true
+    },
+    {
+      "dataset": "Reddit-S",
+      "variant": "f1_owner",
+      "seeds": 3,
+      "mean_val_acc_pct": 95.81629435221355,
+      "std_val_acc_pct": 0.11769782713139702,
+      "mean_val_macro_f1_pct": 91.66781007696301,
+      "std_val_macro_f1_pct": 0.21518723519078803,
+      "model_params": 1436594,
+      "head_params": 5140,
+      "total_params": 1441734,
+      "all_stable": true
+    },
+    {
+      "dataset": "Reddit-S",
+      "variant": "f1_dual_direct",
+      "seeds": 3,
+      "mean_val_acc_pct": 95.82678079605103,
+      "std_val_acc_pct": 0.11581432624424928,
+      "mean_val_macro_f1_pct": 91.91938647692557,
+      "std_val_macro_f1_pct": 0.18047474537706362,
+      "model_params": 1436594,
+      "head_params": 5140,
+      "total_params": 1441734,
+      "all_stable": true
+    }
+  ],
+  "paired_contrast": {
+    "left_variant": "f1_dual_direct",
+    "right_variant": "f1_owner",
+    "per_dataset": {
+      "Movies": {
+        "mean_delta_acc_pp": -0.039990743001302086,
+        "std_delta_acc_pp": 0.15553170528888685,
+        "positive_acc_seeds": 1,
+        "mean_delta_macro_f1_pp": 1.4689334491367723,
+        "std_delta_macro_f1_pp": 1.3062176863183526,
+        "positive_macro_f1_seeds": 3
+      },
+      "Toys": {
+        "mean_delta_acc_pp": 0.10469357172648112,
+        "std_delta_acc_pp": 0.049644640131886186,
+        "positive_acc_seeds": 3,
+        "mean_delta_macro_f1_pp": 0.3450645380179325,
+        "std_delta_macro_f1_pp": 0.40186513928035605,
+        "positive_macro_f1_seeds": 2
+      },
+      "Grocery": {
+        "mean_delta_acc_pp": 0.07808804512023926,
+        "std_delta_acc_pp": 0.14608776243188187,
+        "positive_acc_seeds": 2,
+        "mean_delta_macro_f1_pp": -0.006241697851627759,
+        "std_delta_macro_f1_pp": 1.1047136548343601,
+        "positive_macro_f1_seeds": 1
+      },
+      "ele-fashion": {
+        "mean_delta_acc_pp": -0.051140785217285156,
+        "std_delta_acc_pp": 0.03011087903701978,
+        "positive_acc_seeds": 0,
+        "mean_delta_macro_f1_pp": -0.49845114320581363,
+        "std_delta_macro_f1_pp": 0.11925313198121382,
+        "positive_macro_f1_seeds": 0
+      },
+      "Reddit-S": {
+        "mean_delta_acc_pp": 0.010486443837483725,
+        "std_delta_acc_pp": 0.014830071096033246,
+        "positive_acc_seeds": 1,
+        "mean_delta_macro_f1_pp": 0.2515763999625646,
+        "std_delta_macro_f1_pp": 0.21150371079730929,
+        "positive_macro_f1_seeds": 2
+      }
+    },
+    "macro_mean_delta_acc_pp": 0.020427306493123375,
+    "macro_mean_delta_macro_f1_pp": 0.3121763092119656,
+    "paired_delta_mean_acc_pp": 0.02042730649312337,
+    "paired_delta_std_acc_pp": 0.11697833086761392,
+    "paired_delta_mean_macro_f1_pp": 0.3121763092119656,
+    "paired_delta_std_macro_f1_pp": 1.0245384894442258,
+    "positive_paired_acc_seeds": 7,
+    "positive_paired_f1_seeds": 8
+  },
+  "positive_dataset_means": {
+    "acc": 3,
+    "f1": 3
+  },
+  "dataset_delta_acc_pp": {
+    "Movies": -0.039990743001302086,
+    "Toys": 0.10469357172648112,
+    "Grocery": 0.07808804512023926,
+    "ele-fashion": -0.051140785217285156,
+    "Reddit-S": 0.010486443837483725
+  },
+  "dataset_delta_macro_f1_pp": {
+    "Movies": 1.4689334491367723,
+    "Toys": 0.3450645380179325,
+    "Grocery": -0.006241697851627759,
+    "ele-fashion": -0.49845114320581363,
+    "Reddit-S": 0.2515763999625646
+  },
+  "macro": {
+    "owner_acc_pct": 80.72208603223166,
+    "dual_acc_pct": 80.74251333872476,
+    "delta_acc_pp": 0.020427306493104425,
+    "owner_f1_pct": 73.59353238863488,
+    "dual_f1_pct": 73.90570869784685,
+    "delta_f1_pp": 0.3121763092119636
+  },
+  "benchmark_reference": {
+    "source": "docs/nc_benchmark_results.md",
+    "models": [
+      "dip",
+      "map_mag",
+      "map_mag_v2",
+      "map_mag_v3"
+    ],
+    "mean_val_acc_pct": {
+      "dip": 80.9594,
+      "map_mag": 80.4363,
+      "map_mag_v2": 80.8712,
+      "map_mag_v3": 80.8441
+    },
+    "per_dataset_val_acc_pct": {
+      "Movies": {
+        "dip": 56.1588,
+        "map_mag": 55.7189,
+        "map_mag_v2": 57.1086,
+        "map_mag_v3": 57.1286
+      },
+      "Toys": {
+        "dip": 80.6878,
+        "map_mag": 79.8663,
+        "map_mag_v2": 80.3334,
+        "map_mag_v3": 80.3254
+      },
+      "Grocery": {
+        "dip": 83.6994,
+        "map_mag": 82.7233,
+        "map_mag_v2": 83.3187,
+        "map_mag_v3": 83.2406
+      },
+      "ele-fashion": {
+        "dip": 88.0365,
+        "map_mag": 88.2036,
+        "map_mag_v2": 87.5797,
+        "map_mag_v3": 87.5626
+      },
+      "Reddit-S": {
+        "dip": 96.2147,
+        "map_mag": 95.6695,
+        "map_mag_v2": 96.0155,
+        "map_mag_v3": 95.9631
+      }
+    },
+    "comparison_rows": [
+      {
+        "dataset": "Movies",
+        "dual_mean_val_acc_pct": 57.508498430252075,
+        "dual_std_val_acc_pct": 0.37966100883635395,
+        "best_map_dip_model": "map_mag_v3",
+        "best_map_dip_val_acc_pct": 57.1286,
+        "dual_minus_best_pp": 0.3798984302520765
+      },
+      {
+        "dataset": "Toys",
+        "dual_mean_val_acc_pct": 80.22871812184651,
+        "dual_std_val_acc_pct": 0.21093413563228955,
+        "best_map_dip_model": "dip",
+        "best_map_dip_val_acc_pct": 80.6878,
+        "dual_minus_best_pp": -0.45908187815348356
+      },
+      {
+        "dataset": "Grocery",
+        "dual_mean_val_acc_pct": 82.95754194259644,
+        "dual_std_val_acc_pct": 0.3162879040155623,
+        "best_map_dip_model": "dip",
+        "best_map_dip_val_acc_pct": 83.6994,
+        "dual_minus_best_pp": -0.7418580574035616
+      },
+      {
+        "dataset": "ele-fashion",
+        "dual_mean_val_acc_pct": 87.19102740287781,
+        "dual_std_val_acc_pct": 0.22351637140664846,
+        "best_map_dip_model": "map_mag",
+        "best_map_dip_val_acc_pct": 88.2036,
+        "dual_minus_best_pp": -1.0125725971221868
+      },
+      {
+        "dataset": "Reddit-S",
+        "dual_mean_val_acc_pct": 95.82678079605103,
+        "dual_std_val_acc_pct": 0.11581432624424928,
+        "best_map_dip_model": "dip",
+        "best_map_dip_val_acc_pct": 96.2147,
+        "dual_minus_best_pp": -0.38791920394896806
+      },
+      {
+        "dataset": "macro_mean_dip",
+        "dual_mean_val_acc_pct": 80.74251333872476,
+        "dual_std_val_acc_pct": "",
+        "best_map_dip_model": "dip",
+        "best_map_dip_val_acc_pct": 80.95944,
+        "dual_minus_best_pp": -0.21692666127523808
+      },
+      {
+        "dataset": "macro_mean_map_mag",
+        "dual_mean_val_acc_pct": 80.74251333872476,
+        "dual_std_val_acc_pct": "",
+        "best_map_dip_model": "map_mag",
+        "best_map_dip_val_acc_pct": 80.43632,
+        "dual_minus_best_pp": 0.3061933387247677
+      },
+      {
+        "dataset": "macro_mean_map_mag_v2",
+        "dual_mean_val_acc_pct": 80.74251333872476,
+        "dual_std_val_acc_pct": "",
+        "best_map_dip_model": "map_mag_v2",
+        "best_map_dip_val_acc_pct": 80.87118000000001,
+        "dual_minus_best_pp": -0.12866666127524695
+      },
+      {
+        "dataset": "macro_mean_map_mag_v3",
+        "dual_mean_val_acc_pct": 80.74251333872476,
+        "dual_std_val_acc_pct": "",
+        "best_map_dip_model": "map_mag_v3",
+        "best_map_dip_val_acc_pct": 80.84406,
+        "dual_minus_best_pp": -0.10154666127523626
+      }
+    ]
+  },
+  "decision": {
+    "macro_acc_pass": true,
+    "macro_f1_pass": true,
+    "severe_acc_regression_pass": true,
+    "stable_pass": true,
+    "macro_acc_threshold_pp": -0.2,
+    "macro_delta_acc_pp": 0.020427306493123375,
+    "macro_f1_threshold_pp": -0.2,
+    "macro_delta_f1_pp": 0.3121763092119656,
+    "datasets_acc_le_minus_0_80pp": 0,
+    "stable_run_count": 30,
+    "verdict": "FREEZE_DUAL_FINAL"
+  }
+}
